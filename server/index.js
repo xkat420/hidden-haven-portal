@@ -176,6 +176,9 @@ app.post('/api/shops', async (req, res) => {
       isPublic: isPublic || false,
       ownerId,
       items: [],
+      accessCode: null,
+      shopStyle: 'default',
+      deliveryCities: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -222,7 +225,7 @@ app.get('/api/shops/slug/:slug', async (req, res) => {
 app.put('/api/shops/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, isPublic } = req.body;
+    const { name, description, isPublic, accessCode, shopStyle, deliveryCities } = req.body;
     
     const shops = await readShops();
     const shopIndex = shops.findIndex(shop => shop.id === id);
@@ -236,6 +239,9 @@ app.put('/api/shops/:id', async (req, res) => {
       name: name || shops[shopIndex].name,
       description: description !== undefined ? description : shops[shopIndex].description,
       isPublic: isPublic !== undefined ? isPublic : shops[shopIndex].isPublic,
+      accessCode: accessCode !== undefined ? accessCode : shops[shopIndex].accessCode,
+      shopStyle: shopStyle !== undefined ? shopStyle : shops[shopIndex].shopStyle,
+      deliveryCities: deliveryCities !== undefined ? deliveryCities : shops[shopIndex].deliveryCities,
       updatedAt: new Date().toISOString()
     };
 
@@ -288,6 +294,7 @@ app.post('/api/shops/:id/items', async (req, res) => {
       quantity: parseInt(quantity) || 0,
       weight: weight || '',
       description: description || '',
+      imageUrl: req.body.imageUrl || '',
       createdAt: new Date().toISOString()
     };
 
@@ -305,7 +312,7 @@ app.post('/api/shops/:id/items', async (req, res) => {
 app.put('/api/shops/:shopId/items/:itemId', async (req, res) => {
   try {
     const { shopId, itemId } = req.params;
-    const { name, price, quantity, weight, description } = req.body;
+    const { name, price, quantity, weight, description, imageUrl } = req.body;
     
     const shops = await readShops();
     const shopIndex = shops.findIndex(shop => shop.id === shopId);
@@ -326,7 +333,8 @@ app.put('/api/shops/:shopId/items/:itemId', async (req, res) => {
       price: price !== undefined ? parseFloat(price) : shops[shopIndex].items[itemIndex].price,
       quantity: quantity !== undefined ? parseInt(quantity) : shops[shopIndex].items[itemIndex].quantity,
       weight: weight !== undefined ? weight : shops[shopIndex].items[itemIndex].weight,
-      description: description !== undefined ? description : shops[shopIndex].items[itemIndex].description
+      description: description !== undefined ? description : shops[shopIndex].items[itemIndex].description,
+      imageUrl: imageUrl !== undefined ? imageUrl : shops[shopIndex].items[itemIndex].imageUrl
     };
 
     shops[shopIndex].updatedAt = new Date().toISOString();

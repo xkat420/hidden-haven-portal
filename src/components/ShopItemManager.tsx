@@ -30,7 +30,8 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
     price: '',
     quantity: '',
     weight: '',
-    description: ''
+    description: '',
+    imageUrl: ''
   });
 
   useEffect(() => {
@@ -53,7 +54,8 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
       price: '',
       quantity: '',
       weight: '',
-      description: ''
+      description: '',
+      imageUrl: ''
     });
     setEditingItem(null);
     setShowForm(false);
@@ -117,7 +119,8 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
       price: item.price.toString(),
       quantity: item.quantity.toString(),
       weight: item.weight,
-      description: item.description
+      description: item.description,
+      imageUrl: (item as any).imageUrl || ''
     });
     setShowForm(true);
   };
@@ -222,6 +225,15 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
                   </div>
                 </div>
                 <div>
+                  <Label htmlFor="imageUrl">Image URL</Label>
+                  <Input
+                    id="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <div>
                   <Label htmlFor="itemDescription">Description</Label>
                   <Textarea
                     id="itemDescription"
@@ -254,6 +266,15 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
               <Card key={item.id} className="border-muted">
+                {(item as any).imageUrl && (
+                  <div className="aspect-square overflow-hidden">
+                    <img
+                      src={(item as any).imageUrl}
+                      alt={item.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg truncate">{item.name}</CardTitle>
                   <div className="flex justify-between items-center">

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Save, ArrowLeft, Store } from 'lucide-react';
@@ -39,6 +40,10 @@ const ShopEditor = () => {
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(false);
+  const [accessCode, setAccessCode] = useState('');
+  const [shopStyle, setShopStyle] = useState('default');
+  const [deliveryCities, setDeliveryCities] = useState<string[]>([]);
+  const [newCity, setNewCity] = useState('');
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -61,6 +66,9 @@ const ShopEditor = () => {
         setSlug(currentShop.slug);
         setDescription(currentShop.description);
         setIsPublic(currentShop.isPublic);
+        setAccessCode(currentShop.accessCode || '');
+        setShopStyle(currentShop.shopStyle || 'default');
+        setDeliveryCities(currentShop.deliveryCities || []);
       }
     } catch (error) {
       toast({
@@ -89,8 +97,8 @@ const ShopEditor = () => {
       
       const method = isEditing ? 'PUT' : 'POST';
       const body = isEditing 
-        ? { name, description, isPublic }
-        : { name, slug, description, isPublic, ownerId: user?.id };
+        ? { name, description, isPublic, accessCode, shopStyle, deliveryCities }
+        : { name, slug, description, isPublic, accessCode, shopStyle, deliveryCities, ownerId: user?.id };
 
       const response = await fetch(url, {
         method,
@@ -184,13 +192,80 @@ const ShopEditor = () => {
                 />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="isPublic"
-                  checked={isPublic}
-                  onCheckedChange={setIsPublic}
-                />
-                <Label htmlFor="isPublic">Make shop public</Label>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="isPublic"
+                    checked={isPublic}
+                    onCheckedChange={setIsPublic}
+                  />
+                  <Label htmlFor="isPublic">Make shop public</Label>
+                </div>
+                
+                <div>
+                  <Label htmlFor="shopStyle">Shop Style</Label>
+                  <select
+                    id="shopStyle"
+                    value={shopStyle}
+                    onChange={(e) => setShopStyle(e.target.value)}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="default">Default</option>
+                    <option value="modern">Modern</option>
+                    <option value="vintage">Vintage</option>
+                    <option value="minimal">Minimal</option>
+                  </select>
+                </div>
+              </div>
+
+              {!isPublic && (
+                <div>
+                  <Label htmlFor="accessCode">Access Code (for private shops)</Label>
+                  <Input
+                    id="accessCode"
+                    value={accessCode}
+                    onChange={(e) => setAccessCode(e.target.value)}
+                    placeholder="Enter access code for private access"
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label>Delivery Cities</Label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={newCity}
+                    onChange={(e) => setNewCity(e.target.value)}
+                    placeholder="Add delivery city"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newCity.trim() && !deliveryCities.includes(newCity.trim())) {
+                          setDeliveryCities([...deliveryCities, newCity.trim()]);
+                          setNewCity('');
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (newCity.trim() && !deliveryCities.includes(newCity.trim())) {
+                        setDeliveryCities([...deliveryCities, newCity.trim()]);
+                        setNewCity('');
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {deliveryCities.map((city, index) => (
+                    <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => setDeliveryCities(deliveryCities.filter((_, i) => i !== index))}>
+                      {city} ×
+                    </Badge>
+                  ))}
+                </div>
               </div>
 
               <Button onClick={handleSave} disabled={loading} className="w-full">
