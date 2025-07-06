@@ -46,6 +46,10 @@ const ShopEditor = () => {
   const [newCity, setNewCity] = useState('');
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(['credit-card', 'bitcoin', 'cash']);
+  const [deliveryOptions, setDeliveryOptions] = useState<string[]>(['Ship2', 'Deaddrop']);
+  const [cryptoWallets, setCryptoWallets] = useState<{[key: string]: string}>({});
+  const [shopColors, setShopColors] = useState({ primary: '#000000', secondary: '#ffffff', accent: '#888888' });
 
   useEffect(() => {
     if (shopId && shopId !== 'new') {
@@ -69,6 +73,10 @@ const ShopEditor = () => {
         setAccessCode(currentShop.accessCode || '');
         setShopStyle(currentShop.shopStyle || 'default');
         setDeliveryCities(currentShop.deliveryCities || []);
+        setPaymentMethods(currentShop.paymentMethods || ['credit-card', 'bitcoin', 'cash']);
+        setDeliveryOptions(currentShop.deliveryOptions || ['Ship2', 'Deaddrop']);
+        setCryptoWallets(currentShop.cryptoWallets || {});
+        setShopColors(currentShop.shopColors || { primary: '#000000', secondary: '#ffffff', accent: '#888888' });
       }
     } catch (error) {
       toast({
@@ -97,8 +105,8 @@ const ShopEditor = () => {
       
       const method = isEditing ? 'PUT' : 'POST';
       const body = isEditing 
-        ? { name, description, isPublic, accessCode, shopStyle, deliveryCities }
-        : { name, slug, description, isPublic, accessCode, shopStyle, deliveryCities, ownerId: user?.id };
+        ? { name, description, isPublic, accessCode, shopStyle, deliveryCities, paymentMethods, deliveryOptions, cryptoWallets, shopColors }
+        : { name, slug, description, isPublic, accessCode, shopStyle, deliveryCities, paymentMethods, deliveryOptions, cryptoWallets, shopColors, ownerId: user?.id };
 
       const response = await fetch(url, {
         method,
@@ -229,6 +237,95 @@ const ShopEditor = () => {
                   />
                 </div>
               )}
+
+              <div>
+                <Label>Payment Methods</Label>
+                <div className="space-y-2">
+                  {['credit-card', 'bitcoin', 'cash'].map(method => (
+                    <div key={method} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={method}
+                        checked={paymentMethods.includes(method)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setPaymentMethods([...paymentMethods, method]);
+                          } else {
+                            setPaymentMethods(paymentMethods.filter(m => m !== method));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={method}>{method.charAt(0).toUpperCase() + method.slice(1).replace('-', ' ')}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>Delivery Options</Label>
+                <div className="space-y-2">
+                  {['Ship2', 'Deaddrop'].map(option => (
+                    <div key={option} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={option}
+                        checked={deliveryOptions.includes(option)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setDeliveryOptions([...deliveryOptions, option]);
+                          } else {
+                            setDeliveryOptions(deliveryOptions.filter(o => o !== option));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={option}>{option}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="bitcoin-wallet">Bitcoin Wallet QR</Label>
+                <Input
+                  id="bitcoin-wallet"
+                  value={cryptoWallets.bitcoin || ''}
+                  onChange={(e) => setCryptoWallets({...cryptoWallets, bitcoin: e.target.value})}
+                  placeholder="Bitcoin wallet address or QR code data"
+                />
+              </div>
+
+              <div>
+                <Label>Shop Colors</Label>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div>
+                    <Label htmlFor="primary-color">Primary Color</Label>
+                    <Input
+                      type="color"
+                      id="primary-color"
+                      value={shopColors.primary}
+                      onChange={(e) => setShopColors({...shopColors, primary: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="secondary-color">Secondary Color</Label>
+                    <Input
+                      type="color"
+                      id="secondary-color"
+                      value={shopColors.secondary}
+                      onChange={(e) => setShopColors({...shopColors, secondary: e.target.value})}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="accent-color">Accent Color</Label>
+                    <Input
+                      type="color"
+                      id="accent-color"
+                      value={shopColors.accent}
+                      onChange={(e) => setShopColors({...shopColors, accent: e.target.value})}
+                    />
+                  </div>
+                </div>
+              </div>
 
               <div>
                 <Label>Delivery Cities</Label>

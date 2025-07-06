@@ -8,6 +8,7 @@ import ShopManagement from "./pages/ShopManagement";
 import ShopEditor from "./pages/ShopEditor";
 import PublicShopPage from "./pages/PublicShopPage";
 import Messages from "./pages/Messages";
+import OrderManagement from "./pages/OrderManagement";
 
 function App() {
   return (
@@ -34,6 +35,10 @@ function App() {
       <Route
         path="/messages"
         element={<ProtectedRoute><Messages /></ProtectedRoute>}
+      />
+      <Route
+        path="/order-management"
+        element={<ProtectedRoute><OrderManagement /></ProtectedRoute>}
       />
     </Routes>
   );

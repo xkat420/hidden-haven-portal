@@ -8,6 +8,7 @@ const PORT = 3001;
 const DB_PATH = './users.json';
 const SHOPS_PATH = './shops.json';
 const MESSAGES_PATH = './messages.json';
+const ORDERS_PATH = './orders.json';
 
 // A simple, hardcoded list of valid invitation codes.
 const VALID_INVITE_CODES = ['SECRET-CODE-123', 'ALPHA-INVITE-789'];
@@ -70,6 +71,23 @@ const readMessages = async () => {
 
 const writeMessages = async (messages) => {
   await fs.writeFile(MESSAGES_PATH, JSON.stringify(messages, null, 2));
+};
+
+// Orders database functions
+const readOrders = async () => {
+  try {
+    const data = await fs.readFile(ORDERS_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT' || error instanceof SyntaxError) {
+      return [];
+    }
+    throw error;
+  }
+};
+
+const writeOrders = async (orders) => {
+  await fs.writeFile(ORDERS_PATH, JSON.stringify(orders, null, 2));
 };
 
 app.post('/api/register', async (req, res) => {
@@ -168,7 +186,7 @@ app.post('/api/shops', async (req, res) => {
       return res.status(409).json({ message: 'Shop with this slug already exists.' });
     }
 
-    const newShop = {
+const newShop = {
       id: Date.now().toString(),
       name,
       slug,
@@ -179,6 +197,14 @@ app.post('/api/shops', async (req, res) => {
       accessCode: null,
       shopStyle: 'default',
       deliveryCities: [],
+      paymentMethods: ['credit-card', 'bitcoin', 'cash'],
+      deliveryOptions: ['Ship2', 'Deaddrop'],
+      cryptoWallets: {},
+      shopColors: {
+        primary: '#000000',
+        secondary: '#ffffff',
+        accent: '#888888'
+      },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -225,7 +251,7 @@ app.get('/api/shops/slug/:slug', async (req, res) => {
 app.put('/api/shops/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, isPublic, accessCode, shopStyle, deliveryCities } = req.body;
+    const { name, description, isPublic, accessCode, shopStyle, deliveryCities, paymentMethods, deliveryOptions, cryptoWallets, shopColors } = req.body;
     
     const shops = await readShops();
     const shopIndex = shops.findIndex(shop => shop.id === id);
@@ -242,6 +268,10 @@ app.put('/api/shops/:id', async (req, res) => {
       accessCode: accessCode !== undefined ? accessCode : shops[shopIndex].accessCode,
       shopStyle: shopStyle !== undefined ? shopStyle : shops[shopIndex].shopStyle,
       deliveryCities: deliveryCities !== undefined ? deliveryCities : shops[shopIndex].deliveryCities,
+      paymentMethods: paymentMethods !== undefined ? paymentMethods : shops[shopIndex].paymentMethods,
+      deliveryOptions: deliveryOptions !== undefined ? deliveryOptions : shops[shopIndex].deliveryOptions,
+      cryptoWallets: cryptoWallets !== undefined ? cryptoWallets : shops[shopIndex].cryptoWallets,
+      shopColors: shopColors !== undefined ? shopColors : shops[shopIndex].shopColors,
       updatedAt: new Date().toISOString()
     };
 
@@ -422,6 +452,112 @@ app.get('/api/messages/:userId', async (req, res) => {
     res.json(userMessages);
   } catch (error) {
     console.error('Get User Messages Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+// Orders API endpoints
+app.post('/api/orders', async (req, res) => {
+  try {
+    const { shopId, customerId, customerEmail, items, total, paymentMethod, deliveryOption, deliveryCity, deliveryAddress, cryptoWallet } = req.body;
+    
+    if (!shopId || !items || !total || !paymentMethod || !deliveryOption) {
+      return res.status(400).json({ message: 'Required fields missing.' });
+    }
+
+    const orders = await readOrders();
+    const newOrder = {
+      id: Date.now().toString(),
+      shopId,
+      customerId: customerId || null,
+      customerEmail: customerEmail || 'guest@example.com',
+      items,
+      total: parseFloat(total),
+      paymentMethod,
+      deliveryOption,
+      deliveryCity: deliveryCity || '',
+      deliveryAddress: deliveryAddress || '',
+      cryptoWallet: cryptoWallet || '',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    orders.push(newOrder);
+    await writeOrders(orders);
+    res.status(201).json(newOrder);
+  } catch (error) {
+    console.error('Create Order Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.get('/api/orders/shop/:shopId', async (req, res) => {
+  try {
+    const { shopId } = req.params;
+    const orders = await readOrders();
+    const shopOrders = orders.filter(order => order.shopId === shopId);
+    res.json(shopOrders);
+  } catch (error) {
+    console.error('Get Shop Orders Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.get('/api/orders/customer/:customerId', async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const orders = await readOrders();
+    const customerOrders = orders.filter(order => order.customerId === customerId);
+    res.json(customerOrders);
+  } catch (error) {
+    console.error('Get Customer Orders Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.put('/api/orders/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const validStatuses = ['pending', 'accepted', 'preparing', 'delivering', 'delivered', 'cancelled', 'refused'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status.' });
+    }
+
+    const orders = await readOrders();
+    const orderIndex = orders.findIndex(order => order.id === id);
+
+    if (orderIndex === -1) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    orders[orderIndex].status = status;
+    orders[orderIndex].updatedAt = new Date().toISOString();
+    
+    await writeOrders(orders);
+    res.json(orders[orderIndex]);
+  } catch (error) {
+    console.error('Update Order Status Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.delete('/api/orders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const orders = await readOrders();
+    const filteredOrders = orders.filter(order => order.id !== id);
+    
+    if (orders.length === filteredOrders.length) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    await writeOrders(filteredOrders);
+    res.json({ message: 'Order deleted successfully.' });
+  } catch (error) {
+    console.error('Delete Order Error:', error);
     res.status(500).json({ message: 'An internal server error occurred.' });
   }
 });

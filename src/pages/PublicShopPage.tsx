@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ServerCrash, ShoppingCart, Plus, Minus, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +30,10 @@ interface Shop {
   accessCode?: string;
   shopStyle?: string;
   deliveryCities?: string[];
+  paymentMethods?: string[];
+  deliveryOptions?: string[];
+  cryptoWallets?: {[key: string]: string};
+  shopColors?: {primary: string, secondary: string, accent: string};
 }
 
 interface CartItem extends ShopItem {
@@ -59,6 +64,10 @@ const PublicShopPage = () => {
   const [accessCode, setAccessCode] = useState('');
   const [needsAccessCode, setNeedsAccessCode] = useState(false);
   const [deliveryCity, setDeliveryCity] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('');
+  const [deliveryOption, setDeliveryOption] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [showCheckout, setShowCheckout] = useState(false);
 
   useEffect(() => {
     if (!slug) {
@@ -150,6 +159,66 @@ const PublicShopPage = () => {
 
   const getTotalPrice = () => {
     return cart.reduce((total, item) => total + (item.price * item.cartQuantity), 0);
+  };
+
+  const handleCheckout = async () => {
+    if (!paymentMethod || !deliveryOption) {
+      toast({
+        title: "Missing information",
+        description: "Please select payment method and delivery option",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if ((deliveryOption === 'Ship2' && !deliveryAddress) || 
+        (shop?.deliveryCities?.length && !deliveryCity)) {
+      toast({
+        title: "Missing information", 
+        description: "Please provide delivery details",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const orderData = {
+        shopId: shop?.id,
+        items: cart,
+        total: getTotalPrice(),
+        paymentMethod,
+        deliveryOption,
+        deliveryCity,
+        deliveryAddress,
+        cryptoWallet: paymentMethod === 'bitcoin' ? shop?.cryptoWallets?.bitcoin : ''
+      };
+
+      const response = await fetch('http://localhost:3001/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (response.ok) {
+        const order = await response.json();
+        toast({
+          title: "Order placed!",
+          description: `Order #${order.id} has been submitted successfully`
+        });
+        setCart([]);
+        setShowCheckout(false);
+      } else {
+        throw new Error('Failed to place order');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to place order. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) return (
@@ -327,7 +396,7 @@ const PublicShopPage = () => {
                         </div>
                       )}
                       
-                      <Button className="w-full" variant="secure">
+                      <Button className="w-full" variant="secure" onClick={() => setShowCheckout(true)}>
                         Checkout
                       </Button>
                     </div>
@@ -337,6 +406,94 @@ const PublicShopPage = () => {
             </Card>
           </div>
         </div>
+
+        {/* Checkout Modal */}
+        {showCheckout && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md border-primary/20 shadow-secure">
+              <CardHeader>
+                <CardTitle>Checkout</CardTitle>
+                <CardDescription>Complete your order</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Payment Method</Label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="">Select payment method</option>
+                    {shop?.paymentMethods?.map(method => (
+                      <option key={method} value={method}>
+                        {method.charAt(0).toUpperCase() + method.slice(1).replace('-', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <Label>Delivery Option</Label>
+                  <select
+                    value={deliveryOption}
+                    onChange={(e) => setDeliveryOption(e.target.value)}
+                    className="w-full p-2 border rounded"
+                  >
+                    <option value="">Select delivery option</option>
+                    {shop?.deliveryOptions?.map(option => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {deliveryOption === 'Ship2' && (
+                  <div>
+                    <Label htmlFor="delivery-address">Delivery Address</Label>
+                    <Input
+                      id="delivery-address"
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      placeholder="Enter full delivery address"
+                    />
+                  </div>
+                )}
+
+                {paymentMethod === 'bitcoin' && shop?.cryptoWallets?.bitcoin && (
+                  <div className="p-4 border rounded">
+                    <Label>Bitcoin Payment</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Send payment to: {shop.cryptoWallets.bitcoin}
+                    </p>
+                    <div className="text-lg font-bold">
+                      Total: ${getTotalPrice().toFixed(2)}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total: ${getTotalPrice().toFixed(2)}</span>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowCheckout(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleCheckout}
+                    className="flex-1"
+                    variant="secure"
+                  >
+                    Place Order
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
