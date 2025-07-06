@@ -5,7 +5,9 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ShopManagement from "./pages/ShopManagement";
+import ShopEditor from "./pages/ShopEditor";
 import PublicShopPage from "./pages/PublicShopPage";
+import Messages from "./pages/Messages";
 
 function App() {
   return (
@@ -24,6 +26,14 @@ function App() {
       <Route
         path="/shop-management"
         element={<ProtectedRoute><ShopManagement /></ProtectedRoute>}
+      />
+      <Route
+        path="/shop-editor/:shopId"
+        element={<ProtectedRoute><ShopEditor /></ProtectedRoute>}
+      />
+      <Route
+        path="/messages"
+        element={<ProtectedRoute><Messages /></ProtectedRoute>}
       />
     </Routes>
   );

@@ -6,6 +6,8 @@ const fs = require('fs').promises;
 const app = express();
 const PORT = 3001;
 const DB_PATH = './users.json';
+const SHOPS_PATH = './shops.json';
+const MESSAGES_PATH = './messages.json';
 
 // A simple, hardcoded list of valid invitation codes.
 const VALID_INVITE_CODES = ['SECRET-CODE-123', 'ALPHA-INVITE-789'];
@@ -34,6 +36,40 @@ const readUsers = async () => {
 
 const writeUsers = async (users) => {
   await fs.writeFile(DB_PATH, JSON.stringify(users, null, 2));
+};
+
+// Shop database functions
+const readShops = async () => {
+  try {
+    const data = await fs.readFile(SHOPS_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT' || error instanceof SyntaxError) {
+      return [];
+    }
+    throw error;
+  }
+};
+
+const writeShops = async (shops) => {
+  await fs.writeFile(SHOPS_PATH, JSON.stringify(shops, null, 2));
+};
+
+// Messages database functions
+const readMessages = async () => {
+  try {
+    const data = await fs.readFile(MESSAGES_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT' || error instanceof SyntaxError) {
+      return [];
+    }
+    throw error;
+  }
+};
+
+const writeMessages = async (messages) => {
+  await fs.writeFile(MESSAGES_PATH, JSON.stringify(messages, null, 2));
 };
 
 app.post('/api/register', async (req, res) => {
@@ -112,6 +148,272 @@ app.post('/api/login', async (req, res) => {
 
   } catch (error) {
     console.error('Login Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+// Shop API endpoints
+app.post('/api/shops', async (req, res) => {
+  try {
+    const { name, slug, description, isPublic, ownerId } = req.body;
+    
+    if (!name || !slug || !ownerId) {
+      return res.status(400).json({ message: 'Name, slug, and owner ID are required.' });
+    }
+
+    const shops = await readShops();
+    const shopExists = shops.find(shop => shop.slug === slug);
+
+    if (shopExists) {
+      return res.status(409).json({ message: 'Shop with this slug already exists.' });
+    }
+
+    const newShop = {
+      id: Date.now().toString(),
+      name,
+      slug,
+      description: description || '',
+      isPublic: isPublic || false,
+      ownerId,
+      items: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    shops.push(newShop);
+    await writeShops(shops);
+
+    res.status(201).json(newShop);
+  } catch (error) {
+    console.error('Shop Creation Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.get('/api/shops/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const shops = await readShops();
+    const userShops = shops.filter(shop => shop.ownerId === userId);
+    res.json(userShops);
+  } catch (error) {
+    console.error('Get User Shops Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.get('/api/shops/slug/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const shops = await readShops();
+    const shop = shops.find(s => s.slug === slug);
+    
+    if (!shop) {
+      return res.status(404).json({ message: 'Shop not found.' });
+    }
+
+    res.json(shop);
+  } catch (error) {
+    console.error('Get Shop Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.put('/api/shops/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, isPublic } = req.body;
+    
+    const shops = await readShops();
+    const shopIndex = shops.findIndex(shop => shop.id === id);
+
+    if (shopIndex === -1) {
+      return res.status(404).json({ message: 'Shop not found.' });
+    }
+
+    shops[shopIndex] = {
+      ...shops[shopIndex],
+      name: name || shops[shopIndex].name,
+      description: description !== undefined ? description : shops[shopIndex].description,
+      isPublic: isPublic !== undefined ? isPublic : shops[shopIndex].isPublic,
+      updatedAt: new Date().toISOString()
+    };
+
+    await writeShops(shops);
+    res.json(shops[shopIndex]);
+  } catch (error) {
+    console.error('Update Shop Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.delete('/api/shops/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const shops = await readShops();
+    const filteredShops = shops.filter(shop => shop.id !== id);
+    
+    if (shops.length === filteredShops.length) {
+      return res.status(404).json({ message: 'Shop not found.' });
+    }
+
+    await writeShops(filteredShops);
+    res.json({ message: 'Shop deleted successfully.' });
+  } catch (error) {
+    console.error('Delete Shop Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.post('/api/shops/:id/items', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, price, quantity, weight, description } = req.body;
+    
+    if (!name || price === undefined) {
+      return res.status(400).json({ message: 'Name and price are required.' });
+    }
+
+    const shops = await readShops();
+    const shopIndex = shops.findIndex(shop => shop.id === id);
+
+    if (shopIndex === -1) {
+      return res.status(404).json({ message: 'Shop not found.' });
+    }
+
+    const newItem = {
+      id: Date.now().toString(),
+      name,
+      price: parseFloat(price),
+      quantity: parseInt(quantity) || 0,
+      weight: weight || '',
+      description: description || '',
+      createdAt: new Date().toISOString()
+    };
+
+    shops[shopIndex].items.push(newItem);
+    shops[shopIndex].updatedAt = new Date().toISOString();
+    
+    await writeShops(shops);
+    res.status(201).json(newItem);
+  } catch (error) {
+    console.error('Add Item Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.put('/api/shops/:shopId/items/:itemId', async (req, res) => {
+  try {
+    const { shopId, itemId } = req.params;
+    const { name, price, quantity, weight, description } = req.body;
+    
+    const shops = await readShops();
+    const shopIndex = shops.findIndex(shop => shop.id === shopId);
+
+    if (shopIndex === -1) {
+      return res.status(404).json({ message: 'Shop not found.' });
+    }
+
+    const itemIndex = shops[shopIndex].items.findIndex(item => item.id === itemId);
+    
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: 'Item not found.' });
+    }
+
+    shops[shopIndex].items[itemIndex] = {
+      ...shops[shopIndex].items[itemIndex],
+      name: name || shops[shopIndex].items[itemIndex].name,
+      price: price !== undefined ? parseFloat(price) : shops[shopIndex].items[itemIndex].price,
+      quantity: quantity !== undefined ? parseInt(quantity) : shops[shopIndex].items[itemIndex].quantity,
+      weight: weight !== undefined ? weight : shops[shopIndex].items[itemIndex].weight,
+      description: description !== undefined ? description : shops[shopIndex].items[itemIndex].description
+    };
+
+    shops[shopIndex].updatedAt = new Date().toISOString();
+    await writeShops(shops);
+    res.json(shops[shopIndex].items[itemIndex]);
+  } catch (error) {
+    console.error('Update Item Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.delete('/api/shops/:shopId/items/:itemId', async (req, res) => {
+  try {
+    const { shopId, itemId } = req.params;
+    
+    const shops = await readShops();
+    const shopIndex = shops.findIndex(shop => shop.id === shopId);
+
+    if (shopIndex === -1) {
+      return res.status(404).json({ message: 'Shop not found.' });
+    }
+
+    const originalLength = shops[shopIndex].items.length;
+    shops[shopIndex].items = shops[shopIndex].items.filter(item => item.id !== itemId);
+    
+    if (shops[shopIndex].items.length === originalLength) {
+      return res.status(404).json({ message: 'Item not found.' });
+    }
+
+    shops[shopIndex].updatedAt = new Date().toISOString();
+    await writeShops(shops);
+    res.json({ message: 'Item deleted successfully.' });
+  } catch (error) {
+    console.error('Delete Item Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+// Messages API endpoints  
+app.get('/api/messages', async (req, res) => {
+  try {
+    const messages = await readMessages();
+    res.json(messages);
+  } catch (error) {
+    console.error('Get Messages Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.post('/api/messages', async (req, res) => {
+  try {
+    const { senderId, receiverId, content, type } = req.body;
+    
+    if (!senderId || !receiverId || !content) {
+      return res.status(400).json({ message: 'Sender ID, receiver ID, and content are required.' });
+    }
+
+    const messages = await readMessages();
+    const newMessage = {
+      id: Date.now().toString(),
+      senderId,
+      receiverId,
+      content,
+      type: type || 'text',
+      createdAt: new Date().toISOString(),
+      read: false
+    };
+
+    messages.push(newMessage);
+    await writeMessages(messages);
+    res.status(201).json(newMessage);
+  } catch (error) {
+    console.error('Send Message Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.get('/api/messages/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const messages = await readMessages();
+    const userMessages = messages.filter(msg => 
+      msg.senderId === userId || msg.receiverId === userId
+    );
+    res.json(userMessages);
+  } catch (error) {
+    console.error('Get User Messages Error:', error);
     res.status(500).json({ message: 'An internal server error occurred.' });
   }
 });

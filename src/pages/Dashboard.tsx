@@ -30,7 +30,7 @@ const Dashboard = () => {
           </Button>
         </header>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card className="border-primary/20 shadow-secure">
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><User /> Welcome!</CardTitle>
@@ -50,6 +50,18 @@ const Dashboard = () => {
             <CardContent className="flex-grow flex items-center justify-center">
               <Button onClick={() => navigate('/shop-management')} variant="secure" className="w-full shadow-glow">
                 Manage Your Shops
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="border-primary/20 shadow-secure flex flex-col">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">💬 Messages</CardTitle>
+              <CardDescription>Chat with other users and share files.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-grow flex items-center justify-center">
+              <Button onClick={() => navigate('/messages')} variant="secure" className="w-full shadow-glow">
+                Open Messages
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </CardContent>

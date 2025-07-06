@@ -19,19 +19,10 @@ interface Shop {
 // Mock API function to fetch shops for the logged-in user
 const fetchUserShops = async (userId: string): Promise<Shop[]> => {
   console.log(`Fetching shops for user: ${userId}`);
-  // In a real app, this would be: await fetch(`/api/users/${userId}/shops`);
-  // Returning mock data for demonstration.
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-  return [
-    {
-      id: 'shop1',
-      name: 'The Example Emporium',
-      slug: 'example-shop',
-      description: 'A wonderful place to find all sorts of example items. This is where your shop description will appear.',
-      imageUrl: 'https://via.placeholder.com/150',
-      ownerId: userId,
-    },
-  ];
+  // Real API call to backend
+  const response = await fetch(`http://localhost:3001/api/shops/user/${userId}`);
+  const shops = await response.json();
+  return shops;
 };
 
 const ShopManagement = () => {
@@ -59,10 +50,21 @@ const ShopManagement = () => {
     getShops();
   }, [user]);
 
-  // TODO: Implement create, edit, and delete handlers
-  const handleCreateShop = () => console.log("Navigate to create shop page or open modal");
-  const handleEditShop = (shopId: string) => console.log(`Editing shop: ${shopId}`);
-  const handleDeleteShop = (shopId: string) => console.log(`Deleting shop: ${shopId}`);
+  // Handle create, edit, and delete
+  const handleCreateShop = () => navigate('/shop-editor/new');
+  const handleEditShop = (shopId: string) => navigate(`/shop-editor/${shopId}`);
+  const handleDeleteShop = async (shopId: string) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/shops/${shopId}`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        setShops(shops.filter(shop => shop.id !== shopId));
+      }
+    } catch (error) {
+      setError("Failed to delete shop. Please try again.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background bg-mesh-dark p-4 sm:p-8">
