@@ -914,16 +914,6 @@ app.post('/api/orders', async (req, res) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-      total: parseFloat(total),
-      paymentMethod,
-      deliveryOption,
-      deliveryCity: deliveryCity || '',
-      deliveryAddress: deliveryAddress || '',
-      cryptoWallet: cryptoWallet || '',
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
 
     orders.push(newOrder);
     await writeOrders(orders);
