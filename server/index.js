@@ -13,8 +13,23 @@ const ORDERS_PATH = './orders.json';
 // A simple, hardcoded list of valid invitation codes.
 const VALID_INVITE_CODES = ['SECRET-CODE-123', 'ALPHA-INVITE-789'];
 
-app.use(cors());
+// Configure CORS to allow both typical ports
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
+
+// Add debugging middleware for all requests
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  next();
+});
 
 /**
  * A simple health-check endpoint to verify the server is running.
