@@ -191,6 +191,7 @@ const PublicShopPage = () => {
     try {
       const orderData = {
         shopId: shop?.id,
+        shopOwnerId: shop?.ownerId,
         customerEmail,
         items: cart,
         total: getTotalPrice(),

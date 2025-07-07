@@ -885,7 +885,7 @@ app.get('/api/messages/:userId', async (req, res) => {
 // Orders API endpoints
 app.post('/api/orders', async (req, res) => {
   try {
-    const { shopId, customerId, customerEmail, items, total, paymentMethod, deliveryOption, deliveryCity, deliveryAddress, cryptoWallet } = req.body;
+    const { shopId, shopOwnerId, customerId, customerEmail, items, total, paymentMethod, deliveryOption, deliveryCity, deliveryAddress, cryptoWallet } = req.body;
     
     if (!shopId || !items || !total || !paymentMethod || !deliveryOption) {
       return res.status(400).json({ message: 'Required fields missing.' });
@@ -895,6 +895,7 @@ app.post('/api/orders', async (req, res) => {
     const newOrder = {
       id: Date.now().toString(),
       shopId,
+      shopOwnerId: shopOwnerId || null,
       customerId: customerId || null,
       customerEmail: customerEmail || 'guest@example.com',
       items,
@@ -1097,7 +1098,11 @@ app.get('/api/users/search/:username', async (req, res) => {
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
     
     if (user) {
-      res.json({ id: user.id, username: user.username });
+      res.json({ 
+        id: user.id, 
+        username: user.username,
+        displayName: user.displayName 
+      });
     } else {
       res.status(404).json({ message: 'User not found' });
     }
@@ -1111,7 +1116,11 @@ app.get('/api/users/search/:username', async (req, res) => {
 app.get('/api/users', async (req, res) => {
   try {
     const users = await readUsers();
-    const publicUsers = users.map(u => ({ id: u.id, username: u.username }));
+    const publicUsers = users.map(u => ({ 
+      id: u.id, 
+      username: u.username,
+      displayName: u.displayName 
+    }));
     res.json(publicUsers);
   } catch (error) {
     console.error('Get users error:', error);

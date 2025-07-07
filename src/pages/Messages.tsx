@@ -23,6 +23,7 @@ interface Message {
 interface User {
   id: string;
   username: string;
+  displayName?: string;
 }
 
 const Messages = () => {
@@ -101,7 +102,7 @@ const Messages = () => {
         setNewContactUsername('');
         toast({
           title: "Success",
-          description: `Contact ${userData.username} added successfully`
+          description: `Contact ${userData.displayName || userData.username} added successfully`
         });
       } else {
         toast({
@@ -275,7 +276,7 @@ const Messages = () => {
                       className="w-full justify-start"
                       onClick={() => setSelectedUser(contact.id)}
                     >
-                      {contact.username}
+                      {contact.displayName || contact.username}
                     </Button>
                   ))}
                 </div>
@@ -291,7 +292,7 @@ const Messages = () => {
                   {selectedUser ? (
                     <>
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                      Chat with {users.find(u => u.id === selectedUser)?.username}
+                      Chat with {users.find(u => u.id === selectedUser)?.displayName || users.find(u => u.id === selectedUser)?.username}
                     </>
                   ) : (
                     'Select a contact to start messaging'
