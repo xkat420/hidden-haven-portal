@@ -5,10 +5,10 @@ $basePath = $PSScriptRoot
 $frontendPath = $basePath  
 $backendPath = Join-Path $basePath "server"
 
-Write-Host "🚀 Starting Hidden Haven Portal Setup..." -ForegroundColor Cyan
+Write-Host "Starting Hidden Haven Portal Setup..." -ForegroundColor Cyan
 
 # Backend setup
-Write-Host "`n📦 Setting up backend server..." -ForegroundColor Yellow
+Write-Host "Setting up backend server..." -ForegroundColor Yellow
 Push-Location $backendPath
 
 if (-not (Test-Path "node_modules")) {
