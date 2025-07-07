@@ -19,8 +19,13 @@ if (-not (Test-Path (Join-Path $backendPath "node_modules"))) {
     npm install
 }
 
-Write-Host "Starting backend server (Node.js)..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; npm start"
+Write-Host "Starting backend server with JWT authentication..." -ForegroundColor Green
+# Set environment variables for security
+$env:JWT_SECRET = "your-super-secret-jwt-key-change-in-production-$(Get-Random)"
+$env:INVITE_CODES = "SECRET-CODE-123,ALPHA-INVITE-789"
+$env:NODE_ENV = "development"
+
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; `$env:JWT_SECRET='$($env:JWT_SECRET)'; `$env:INVITE_CODES='$($env:INVITE_CODES)'; `$env:NODE_ENV='$($env:NODE_ENV)'; npm start"
 Pop-Location
 
 # --- Frontend App Setup ---
