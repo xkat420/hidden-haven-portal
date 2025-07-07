@@ -20,7 +20,6 @@ Write-Host "Starting backend server..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; npm start"
 
 Write-Host "Starting email listener service..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; node email-listener.js"
 Pop-Location
 
 # Frontend setup  
@@ -39,7 +38,6 @@ Pop-Location
 Write-Host "All services launched successfully!" -ForegroundColor Magenta
 Write-Host "   Backend: http://localhost:3001" -ForegroundColor Green
 Write-Host "   Frontend: http://localhost:5173" -ForegroundColor Green
-Write-Host "   Email Service: Monitoring contact@louve.pro inbox" -ForegroundColor Green
 Write-Host "Features implemented:" -ForegroundColor Cyan
 Write-Host "   - User settings and profile management" -ForegroundColor White
 Write-Host "   - Image upload system" -ForegroundColor White  

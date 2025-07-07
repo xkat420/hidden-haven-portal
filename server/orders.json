@@ -1,9 +1,37 @@
 [
   {
-    "id": "1751858027266",
+    "id": "1751859911960",
     "shopId": "1751857981433",
     "customerId": null,
-    "customerEmail": "guest@example.com",
+    "customerEmail": "toxde420@gmail.com",
+    "items": [
+      {
+        "id": "1751858000233",
+        "name": "uwu",
+        "price": 10,
+        "quantity": 1,
+        "weight": "100g",
+        "description": "powerfull",
+        "imageUrl": "/uploads/1751858000212-153513284.webp",
+        "createdAt": "2025-07-07T03:13:20.233Z",
+        "cartQuantity": 4
+      }
+    ],
+    "total": 40,
+    "paymentMethod": "credit-card",
+    "deliveryOption": "Deaddrop",
+    "deliveryCity": "",
+    "deliveryAddress": "Mx",
+    "cryptoWallet": "",
+    "status": "delivered",
+    "createdAt": "2025-07-07T03:45:11.960Z",
+    "updatedAt": "2025-07-07T03:45:28.807Z"
+  },
+  {
+    "id": "1751859982138",
+    "shopId": "1751857981433",
+    "customerId": null,
+    "customerEmail": "toxde420@gmail.com",
     "items": [
       {
         "id": "1751858000233",
@@ -21,10 +49,10 @@
     "paymentMethod": "credit-card",
     "deliveryOption": "Ship2",
     "deliveryCity": "",
-    "deliveryAddress": "Mx 902",
+    "deliveryAddress": "Mx",
     "cryptoWallet": "",
-    "status": "pending",
-    "createdAt": "2025-07-07T03:13:47.266Z",
-    "updatedAt": "2025-07-07T03:13:47.266Z"
+    "status": "delivered",
+    "createdAt": "2025-07-07T03:46:22.138Z",
+    "updatedAt": "2025-07-07T03:47:07.167Z"
   }
 ]

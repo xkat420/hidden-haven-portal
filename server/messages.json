@@ -8,5 +8,35 @@
     "imageUrl": null,
     "createdAt": "2025-07-07T03:14:08.365Z",
     "read": false
+  },
+  {
+    "id": "1751858791487",
+    "senderId": "1751831049491",
+    "receiverId": "1751831049491",
+    "content": "aa",
+    "type": "text",
+    "imageUrl": null,
+    "createdAt": "2025-07-07T03:26:31.487Z",
+    "read": false
+  },
+  {
+    "id": "1751859911964_order",
+    "senderId": "guest",
+    "receiverId": "1751831049491",
+    "content": "New order #1751859911960 - $40. Items: uwu x4. View details: http://localhost:5173/order-management",
+    "type": "text",
+    "imageUrl": null,
+    "createdAt": "2025-07-07T03:45:11.964Z",
+    "read": false
+  },
+  {
+    "id": "1751859984108_order",
+    "senderId": "guest",
+    "receiverId": "1751831049491",
+    "content": "New order #1751859982138 - $10. Items: uwu x1. View details: http://localhost:5173/order-management",
+    "type": "text",
+    "imageUrl": null,
+    "createdAt": "2025-07-07T03:46:24.108Z",
+    "read": false
   }
 ]

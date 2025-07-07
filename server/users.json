@@ -4,8 +4,22 @@
     "username": "louve",
     "password": "$2a$10$UjDqHXfBbIz9P2QqHbxYLuWrkZTW0.SUG6MK86ZKz/jILsm77a6li",
     "createdAt": "2025-07-06T19:44:09.491Z",
-    "updatedAt": "2025-07-07T03:11:37.921Z",
+    "updatedAt": "2025-07-07T03:45:59.022Z",
     "email": "toxde420@gmail.com",
-    "emailConfirmed": true
+    "emailConfirmed": true,
+    "emailNotifications": true,
+    "messageNotifications": true,
+    "showMessageContent": true
+  },
+  {
+    "id": "1751860099823",
+    "username": "louve3",
+    "password": "$2a$10$F2ofO4i2gSbUz.iA3v47/u5jywSAsyeR6lOJI3HopeIQRKP61Qh/m",
+    "displayName": "louve3",
+    "email": "",
+    "emailConfirmed": true,
+    "emailNotifications": true,
+    "messageNotifications": true,
+    "showMessageContent": true
   }
 ]
