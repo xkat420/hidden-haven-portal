@@ -209,25 +209,29 @@ const Messages = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background bg-mesh-dark p-4 sm:p-8 transition-all duration-300">
-      <div className="max-w-6xl mx-auto animate-fade-in">
-        <header className="mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-3 hover-scale">
-            <MessageCircle className="animate-glow-pulse" />
+    <div className="min-h-screen bg-background p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto">
+        <header className="mb-6">
+          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-primary/10">
+              <MessageCircle className="w-6 h-6 text-primary" />
+            </div>
             Messages
           </h1>
-          <p className="text-muted-foreground mt-2">Connect with users securely and privately</p>
+          <p className="text-muted-foreground mt-2">Secure messaging platform</p>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 lg:grid-cols-12 h-[calc(100vh-12rem)]">
           {/* Users List */}
-          <Card className="border-primary/20 shadow-secure glass backdrop-blur-sm hover:shadow-glow transition-all duration-300">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
+          <Card className="lg:col-span-4 border border-border/50 bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <div className="p-1.5 rounded-lg bg-primary/10">
+                  <MessageCircle className="h-4 w-4 text-primary" />
+                </div>
                 Contacts
               </CardTitle>
-              <CardDescription>Select a user to message</CardDescription>
+              <CardDescription>Start a conversation</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -261,8 +265,8 @@ const Messages = () => {
           </Card>
 
           {/* Chat Area */}
-          <div className="lg:col-span-2">
-            <Card className="border-primary/20 shadow-secure glass backdrop-blur-sm hover:shadow-glow transition-all duration-300 h-[600px] flex flex-col">
+          <div className="lg:col-span-8">
+            <Card className="border border-border/50 bg-card/50 backdrop-blur-sm h-full flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   {selectedUser ? (
@@ -284,11 +288,11 @@ const Messages = () => {
                         key={message.id}
                         className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div
-                          className={`max-w-xs p-3 rounded-lg ${
+                         <div
+                          className={`max-w-sm p-3 rounded-2xl shadow-sm ${
                             message.senderId === user?.id
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
+                              ? 'bg-primary text-primary-foreground ml-4'
+                              : 'bg-background border mr-4'
                           }`}
                         >
                           <div className="flex items-center gap-2 mb-1">

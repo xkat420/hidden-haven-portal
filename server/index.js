@@ -898,6 +898,22 @@ app.post('/api/orders', async (req, res) => {
       customerId: customerId || null,
       customerEmail: customerEmail || 'guest@example.com',
       items,
+      total,
+      paymentMethod,
+      deliveryOption,
+      deliveryCity: deliveryCity || '',
+      deliveryAddress: deliveryAddress || '',
+      cryptoWallet: cryptoWallet || '',
+      status: 'pending',
+      statusHistory: [{
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+        note: 'Order placed'
+      }],
+      ownerNote: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
       total: parseFloat(total),
       paymentMethod,
       deliveryOption,
@@ -977,10 +993,10 @@ app.get('/api/orders/customer/:customerId', async (req, res) => {
 app.put('/api/orders/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, ownerNote } = req.body;
     
     const validStatuses = ['pending', 'accepted', 'preparing', 'delivering', 'delivered', 'cancelled', 'refused'];
-    if (!validStatuses.includes(status)) {
+    if (!validStatuses.includes(status) && !req.body.customStatus) {
       return res.status(400).json({ message: 'Invalid status.' });
     }
 
@@ -992,8 +1008,31 @@ app.put('/api/orders/:id/status', async (req, res) => {
     }
 
     const oldStatus = orders[orderIndex].status;
-    orders[orderIndex].status = status;
+    const newStatus = req.body.customStatus || status;
+    
+    // Initialize statusHistory if it doesn't exist
+    if (!orders[orderIndex].statusHistory) {
+      orders[orderIndex].statusHistory = [{
+        status: oldStatus,
+        timestamp: orders[orderIndex].createdAt,
+        note: 'Order placed'
+      }];
+    }
+    
+    // Add new status to history
+    orders[orderIndex].statusHistory.push({
+      status: newStatus,
+      timestamp: new Date().toISOString(),
+      note: ownerNote || `Status changed to ${newStatus}`
+    });
+    
+    orders[orderIndex].status = newStatus;
     orders[orderIndex].updatedAt = new Date().toISOString();
+    
+    // Update owner note if provided
+    if (ownerNote && orders[orderIndex].deliveryOption === 'Deaddrop') {
+      orders[orderIndex].ownerNote = ownerNote;
+    }
     
     await writeOrders(orders);
 
@@ -1004,8 +1043,8 @@ app.put('/api/orders/:id/status', async (req, res) => {
         order.customerId,
         'email',
         `Order Status Updated`,
-        `Your order #${order.id} status has been updated from ${oldStatus} to ${status}.`,
-        { orderId: order.id, oldStatus, newStatus: status }
+        `Your order #${order.id} status has been updated from ${oldStatus} to ${newStatus}.`,
+        { orderId: order.id, oldStatus, newStatus }
       );
     }
 

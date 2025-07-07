@@ -33,6 +33,7 @@ interface Order {
   status: string;
   statusHistory?: StatusHistory[];
   deliveryTime?: string;
+  ownerNote?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,7 +77,7 @@ const OrderManagement = () => {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, status: string, isCustom = false) => {
+  const updateOrderStatus = async (orderId: string, status: string, isCustom = false, ownerNote?: string) => {
     try {
       const actualStatus = isCustom ? customStatus : status;
       
@@ -87,7 +88,8 @@ const OrderManagement = () => {
         },
         body: JSON.stringify({ 
           status: actualStatus,
-          customStatus: isCustom ? actualStatus : null 
+          customStatus: isCustom ? actualStatus : null,
+          ownerNote: ownerNote
         }),
       });
 
@@ -276,6 +278,37 @@ const OrderManagement = () => {
                         {t('delete')}
                       </Button>
                     </div>
+                    
+                    {/* Owner Note for Dead Drop Orders */}
+                    {order.deliveryOption === 'Deaddrop' && (
+                      <div className="border-t pt-3">
+                        <label className="text-sm font-medium block mb-2">Owner Note (for Deaddrop):</label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Add note for customer..."
+                            value={order.ownerNote || ''}
+                            onChange={(e) => {
+                              // Update local state immediately
+                              setOrders(orders.map(o => 
+                                o.id === order.id ? {...o, ownerNote: e.target.value} : o
+                              ));
+                            }}
+                            className="flex-1"
+                          />
+                          <Button 
+                            size="sm" 
+                            onClick={() => updateOrderStatus(order.id, order.status, false, order.ownerNote)}
+                          >
+                            Save Note
+                          </Button>
+                        </div>
+                        {order.ownerNote && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Current note: {order.ownerNote}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     
                     {/* Custom Status Input */}
                     <div className="flex gap-2 items-center">

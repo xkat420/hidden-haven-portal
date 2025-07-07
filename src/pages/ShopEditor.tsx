@@ -219,7 +219,7 @@ const ShopEditor = () => {
                     id="shopStyle"
                     value={shopStyle}
                     onChange={(e) => setShopStyle(e.target.value)}
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="default">Default</option>
                     <option value="modern">Modern</option>

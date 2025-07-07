@@ -205,6 +205,27 @@ const PublicShopPage = () => {
 
       if (response.ok) {
         const order = await response.json();
+        
+        // Send automatic message to shop owner
+        try {
+          const messageContent = `New order #${order.id} - $${getTotalPrice()}. Items: ${cart.map(item => `${item.name} x${item.cartQuantity}`).join(', ')}. View details: ${window.location.origin}/order-management`;
+          
+          await fetch('http://localhost:3001/api/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              senderId: 'guest',
+              receiverId: shop?.ownerId,
+              content: messageContent,
+              type: 'text'
+            }),
+          });
+        } catch (msgError) {
+          console.error('Failed to send notification message:', msgError);
+        }
+        
         toast({
           title: "Order placed!",
           description: `Order #${order.id} has been submitted successfully`
@@ -385,11 +406,11 @@ const PublicShopPage = () => {
                           <label className="block text-sm font-medium mb-2">
                             Delivery City
                           </label>
-                          <select
-                            value={deliveryCity}
-                            onChange={(e) => setDeliveryCity(e.target.value)}
-                            className="w-full p-2 border rounded"
-                          >
+                  <select
+                    value={deliveryCity}
+                    onChange={(e) => setDeliveryCity(e.target.value)}
+                    className="w-full p-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
                             <option value="">Select city</option>
                             {shop.deliveryCities.map(city => (
                               <option key={city} value={city}>{city}</option>
@@ -435,7 +456,7 @@ const PublicShopPage = () => {
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="">Select payment method</option>
                     {shop?.paymentMethods?.map(method => (
@@ -451,7 +472,7 @@ const PublicShopPage = () => {
                   <select
                     value={deliveryOption}
                     onChange={(e) => setDeliveryOption(e.target.value)}
-                    className="w-full p-2 border rounded"
+                    className="w-full p-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   >
                     <option value="">Select delivery option</option>
                     {shop?.deliveryOptions?.map(option => (
