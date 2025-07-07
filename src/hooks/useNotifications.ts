@@ -49,14 +49,15 @@ export const useNotifications = () => {
     sendEmailNotification(notification)
   }
 
-  // Listen for new messages
+  // Listen for new messages and orders
   useEffect(() => {
     if (!user) return
 
-    const checkForNewMessages = async () => {
+    const checkForNotifications = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/messages/${user.id}`)
-        const messages = await response.json()
+        // Check for new messages
+        const messageResponse = await fetch(`http://localhost:3001/api/messages/${user.id}`)
+        const messages = await messageResponse.json()
         
         // Store last checked timestamp in localStorage
         const lastChecked = localStorage.getItem('lastMessageCheck')
@@ -79,14 +80,36 @@ export const useNotifications = () => {
           })
         }
 
+        // Check for new orders
+        const orderSummaryResponse = await fetch(`http://localhost:3001/api/orders/user/${user.id}/summary`)
+        const orderSummary = await orderSummaryResponse.json()
+        
+        const lastOrderCheck = localStorage.getItem('lastOrderCheck')
+        const lastOrderTime = lastOrderCheck ? new Date(lastOrderCheck) : new Date(0)
+        
+        // Check if there are recent orders
+        const recentOrders = orderSummary.recentOrders?.filter((order: any) => 
+          new Date(order.createdAt) > lastOrderTime
+        ) || []
+
+        if (recentOrders.length > 0) {
+          const latestOrder = recentOrders[recentOrders.length - 1]
+          sendNotification({
+            title: 'New Order Received',
+            body: `New order for $${latestOrder.total} from ${latestOrder.customerEmail}`,
+            data: { orderId: latestOrder.id, type: 'order' }
+          })
+        }
+
         localStorage.setItem('lastMessageCheck', new Date().toISOString())
+        localStorage.setItem('lastOrderCheck', new Date().toISOString())
       } catch (error) {
-        console.error('Failed to check for new messages:', error)
+        console.error('Failed to check for notifications:', error)
       }
     }
 
     // Check every 30 seconds
-    const interval = setInterval(checkForNewMessages, 30000)
+    const interval = setInterval(checkForNotifications, 30000)
     
     return () => clearInterval(interval)
   }, [user])

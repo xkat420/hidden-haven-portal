@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Package, Truck, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 interface Order {
@@ -27,6 +28,7 @@ interface Order {
 const OrderManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { sendNotification } = useNotifications();
   const [orders, setOrders] = useState<Order[]>([]);
   const [shops, setShops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,13 +73,24 @@ const OrderManagement = () => {
       });
 
       if (response.ok) {
+        const updatedOrder = await response.json();
         setOrders(orders.map(order => 
-          order.id === orderId ? { ...order, status } : order
+          order.id === orderId ? updatedOrder : order
         ));
+        
         toast({
           title: "Success",
           description: `Order status updated to ${status}`
         });
+
+        // Send browser notification for significant status changes
+        if (['accepted', 'preparing', 'delivering', 'delivered'].includes(status)) {
+          sendNotification({
+            title: 'Order Status Updated',
+            body: `Order #${orderId} is now ${status}`,
+            data: { orderId, status, type: 'order-update' }
+          });
+        }
       }
     } catch (error) {
       toast({

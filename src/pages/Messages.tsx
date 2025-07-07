@@ -53,13 +53,9 @@ const Messages = () => {
 
   const fetchUsers = async () => {
     try {
-      // In a real app, you'd have a proper users endpoint
-      // For now, we'll use a mock list
-      setUsers([
-        { id: '1', username: 'testuser' },
-        { id: '2', username: 'shopowner' },
-        { id: '3', username: 'customer1' }
-      ]);
+      const response = await fetch('http://localhost:3001/api/users');
+      const data = await response.json();
+      setUsers(data);
     } catch (error) {
       console.error('Failed to fetch users:', error);
     }

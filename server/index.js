@@ -911,6 +911,38 @@ app.post('/api/orders', async (req, res) => {
 
     orders.push(newOrder);
     await writeOrders(orders);
+
+    // Get shop and owner info
+    const shops = await readShops();
+    const shop = shops.find(s => s.id === shopId);
+    
+    if (shop) {
+      // Send notification to shop owner
+      const orderSummary = items.map(item => `${item.name} x${item.cartQuantity}`).join(', ');
+      await sendNotification(
+        shop.ownerId,
+        'email',
+        'New Order Received',
+        `You have a new order for $${total}. Items: ${orderSummary}.`,
+        { orderId: newOrder.id, shopId, total }
+      );
+
+      // Send order message to shop owner from customer
+      const messages = await readMessages();
+      const orderMessage = {
+        id: Date.now().toString() + '_order',
+        senderId: customerId || 'guest',
+        receiverId: shop.ownerId,
+        content: `New order #${newOrder.id} - $${total}. Items: ${orderSummary}. View details: http://localhost:5173/order-management`,
+        type: 'text',
+        imageUrl: null,
+        createdAt: new Date().toISOString(),
+        read: false
+      };
+      messages.push(orderMessage);
+      await writeMessages(messages);
+    }
+
     res.status(201).json(newOrder);
   } catch (error) {
     console.error('Create Order Error:', error);
@@ -959,10 +991,24 @@ app.put('/api/orders/:id/status', async (req, res) => {
       return res.status(404).json({ message: 'Order not found.' });
     }
 
+    const oldStatus = orders[orderIndex].status;
     orders[orderIndex].status = status;
     orders[orderIndex].updatedAt = new Date().toISOString();
     
     await writeOrders(orders);
+
+    // Send notification to customer if they have an account
+    const order = orders[orderIndex];
+    if (order.customerId) {
+      await sendNotification(
+        order.customerId,
+        'email',
+        `Order Status Updated`,
+        `Your order #${order.id} status has been updated from ${oldStatus} to ${status}.`,
+        { orderId: order.id, oldStatus, newStatus: status }
+      );
+    }
+
     res.json(orders[orderIndex]);
   } catch (error) {
     console.error('Update Order Status Error:', error);
@@ -1002,6 +1048,47 @@ app.get('/api/users/search/:username', async (req, res) => {
     }
   } catch (error) {
     console.error('User search error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all users (for messaging)
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await readUsers();
+    const publicUsers = users.map(u => ({ id: u.id, username: u.username }));
+    res.json(publicUsers);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get user's pending orders count
+app.get('/api/orders/user/:userId/summary', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const shops = await readShops();
+    const userShops = shops.filter(shop => shop.ownerId === userId);
+    
+    if (userShops.length === 0) {
+      return res.json({ pendingOrders: 0, totalOrders: 0 });
+    }
+
+    const orders = await readOrders();
+    const userOrders = orders.filter(order => 
+      userShops.some(shop => shop.id === order.shopId)
+    );
+
+    const pendingOrders = userOrders.filter(order => order.status === 'pending').length;
+    
+    res.json({ 
+      pendingOrders, 
+      totalOrders: userOrders.length,
+      recentOrders: userOrders.slice(-5).reverse()
+    });
+  } catch (error) {
+    console.error('Get order summary error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

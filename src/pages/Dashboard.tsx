@@ -1,8 +1,10 @@
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LogOut, User, Store, ArrowRight } from "lucide-react";
+import { LogOut, User, Store, ArrowRight, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import OrdersOverview from "@/components/OrdersOverview";
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -66,6 +68,7 @@ const Dashboard = () => {
               </Button>
             </CardContent>
           </Card>
+          <OrdersOverview userId={user.id} navigate={navigate} />
         </div>
       </div>
     </div>
