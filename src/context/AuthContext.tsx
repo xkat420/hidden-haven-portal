@@ -1,15 +1,18 @@
 import { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
 // Define the shape of the user object
-// Define the shape of the user object
 interface User {
   id: string;
   username: string;
+  displayName: string;
+  email: string;
+  profileImage: string;
+  emailConfirmed: boolean;
+  emailNotifications: boolean;
+  messageNotifications: boolean;
+  showMessageContent: boolean;
   createdAt: string;
-  // Add other user properties here if needed
 }
-
-
 
 // Define the shape of the context value
 interface AuthContextType {
@@ -17,6 +20,7 @@ interface AuthContextType {
   user: User | null;
   login: (userData: User) => void;
   logout: () => void;
+  updateUser: (userData: User) => void;
   isLoading: boolean;
 }
 
@@ -46,6 +50,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
+  const updateUser = (userData: User) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
+
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
@@ -55,6 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated: !!user,
     user,
     login,
+    updateUser,
     logout,
     isLoading,
   };
@@ -69,3 +79,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export { AuthContext };

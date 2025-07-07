@@ -395,6 +395,98 @@ app.post('/api/confirm-email', async (req, res) => {
   }
 });
 
+// Email change request endpoint
+app.post('/api/users/:id/request-email-change', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newEmail } = req.body;
+    
+    if (!newEmail) {
+      return res.status(400).json({ message: 'New email is required.' });
+    }
+
+    const users = await readUsers();
+    const userIndex = users.findIndex(u => u.id === id);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Check if email is already in use
+    const emailExists = users.find(u => u.email === newEmail && u.id !== id);
+    if (emailExists) {
+      return res.status(409).json({ message: 'Email already in use by another account.' });
+    }
+
+    // Generate confirmation code
+    const confirmationCode = Math.random().toString(36).substring(2, 15);
+    
+    users[userIndex].pendingEmail = newEmail;
+    users[userIndex].emailChangeCode = confirmationCode;
+    users[userIndex].updatedAt = new Date().toISOString();
+
+    await writeUsers(users);
+
+    // Send confirmation email to new address
+    try {
+      await emailTransporter.sendMail({
+        from: 'contact@louve.pro',
+        to: newEmail,
+        subject: 'Confirm your new email address - Hidden Haven',
+        html: `
+          <h2>Confirm your new email address</h2>
+          <p>You requested to change your email address for your Hidden Haven account.</p>
+          <p>Your confirmation code is: <strong>${confirmationCode}</strong></p>
+          <p>Enter this code in the app to confirm your new email address.</p>
+          <p>If you didn't request this change, please ignore this email.</p>
+        `
+      });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      // Continue anyway - email might be configured incorrectly
+    }
+
+    res.json({ message: 'Confirmation code sent to new email address.' });
+  } catch (error) {
+    console.error('Email Change Request Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+// Email change confirmation endpoint
+app.post('/api/users/:id/confirm-email-change', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { confirmationCode } = req.body;
+    
+    const users = await readUsers();
+    const userIndex = users.findIndex(u => u.id === id && u.emailChangeCode === confirmationCode);
+    
+    if (userIndex === -1) {
+      return res.status(400).json({ message: 'Invalid confirmation code.' });
+    }
+
+    if (!users[userIndex].pendingEmail) {
+      return res.status(400).json({ message: 'No pending email change found.' });
+    }
+
+    // Update email
+    users[userIndex].email = users[userIndex].pendingEmail;
+    users[userIndex].emailConfirmed = true;
+    delete users[userIndex].pendingEmail;
+    delete users[userIndex].emailChangeCode;
+    users[userIndex].updatedAt = new Date().toISOString();
+
+    await writeUsers(users);
+    
+    const { password: _, ...userData } = users[userIndex];
+    res.json({ message: 'Email address updated successfully.', user: userData });
+  } catch (error) {
+    console.error('Email Change Confirmation Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
 // Shop access code endpoint
 app.post('/api/shops/:slug/verify-access', async (req, res) => {
   try {
