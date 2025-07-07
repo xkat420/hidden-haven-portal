@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
-import { api } from "@/lib/api";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -22,16 +21,23 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      console.log('Login attempt with:', formData.username);
-      const data = await api.post('/api/login', formData);
-      console.log('Login response:', data);
-      
-      auth.login(data.user, data.token);
+      const response = await fetch("http://localhost:3001/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to login");
+      }
+
+      auth.login(data.user);
       navigate("/dashboard");
 
     } catch (err: any) {
-      console.error('Login error:', err);
-      if (err.message === 'Failed to fetch') {
+      if (err instanceof TypeError && err.message === 'Failed to fetch') {
         setError('Network Error: Could not connect to the server.');
       } else {
         setError(err.message);

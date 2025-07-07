@@ -1,10 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const { body, validationResult, param } = require('express-validator');
 const fs = require('fs').promises;
 
 const app = express();
@@ -14,106 +10,11 @@ const SHOPS_PATH = './shops.json';
 const MESSAGES_PATH = './messages.json';
 const ORDERS_PATH = './orders.json';
 
-// Security configurations
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-const VALID_INVITE_CODES = process.env.INVITE_CODES ? 
-  process.env.INVITE_CODES.split(',') : 
-  ['SECRET-CODE-123', 'ALPHA-INVITE-789'];
+// A simple, hardcoded list of valid invitation codes.
+const VALID_INVITE_CODES = ['SECRET-CODE-123', 'ALPHA-INVITE-789'];
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-}));
-
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: 'Too many requests from this IP, please try again later.'
-});
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // limit each IP to 5 auth requests per windowMs
-  message: 'Too many authentication attempts, please try again later.'
-});
-
-app.use(limiter);
-
-// CORS configuration - restrict to specific origins in production
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173']
-    : ['http://localhost:5173', 'http://localhost:3000'],
-  credentials: true,
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
-app.use(express.json({ limit: '10mb' }));
-
-// Comprehensive logging middleware
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  console.log('Headers:', req.headers);
-  console.log('Body:', req.body);
-  next();
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('ERROR CAUGHT:', err);
-  console.error('Error stack:', err.stack);
-  console.error('Request:', req.method, req.path);
-  console.error('Body:', req.body);
-  res.status(500).json({ message: 'Internal server error', error: err.message });
-});
-
-// Authentication middleware
-const authenticateToken = (req, res, next) => {
-  console.log('Auth middleware called for:', req.path);
-  const authHeader = req.headers['authorization'];
-  console.log('Auth header:', authHeader);
-  const token = authHeader && authHeader.split(' ')[1];
-  console.log('Token extracted:', token);
-
-  if (!token) {
-    console.log('No token provided');
-    return res.status(401).json({ message: 'Access token required' });
-  }
-
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      console.log('JWT verification error:', err);
-      return res.status(403).json({ message: 'Invalid or expired token' });
-    }
-    console.log('JWT verified, user:', user);
-    req.user = user;
-    next();
-  });
-};
-
-// Input validation middleware
-const handleValidationErrors = (req, res, next) => {
-  console.log('Validation middleware called');
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    console.log('Validation errors:', errors.array());
-    return res.status(400).json({ 
-      message: 'Validation failed', 
-      errors: errors.array().map(err => ({ field: err.path, message: err.msg }))
-    });
-  }
-  console.log('Validation passed');
-  next();
-};
+app.use(cors());
+app.use(express.json());
 
 /**
  * A simple health-check endpoint to verify the server is running.
@@ -189,18 +90,16 @@ const writeOrders = async (orders) => {
   await fs.writeFile(ORDERS_PATH, JSON.stringify(orders, null, 2));
 };
 
-app.post('/api/register', 
-  authLimiter,
-  [
-    body('username').trim().isLength({ min: 3, max: 50 }).matches(/^[a-zA-Z0-9_]+$/).withMessage('Username must be 3-50 characters and contain only letters, numbers, and underscores'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
-    body('inviteCode').trim().notEmpty().withMessage('Invitation code is required')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.post('/api/register', async (req, res) => {
   try {
     const { username, password, inviteCode } = req.body;
 
+    if (!username || !password || !inviteCode) {
+      return res.status(400).json({ message: 'All fields are required.' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long.' });
+    }
     if (!VALID_INVITE_CODES.includes(inviteCode)) {
       return res.status(400).json({ message: 'Invalid invitation code.' });
     }
@@ -212,7 +111,7 @@ app.post('/api/register',
       return res.status(409).json({ message: 'An account with this username already exists.' });
     }
 
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = {
@@ -233,43 +132,36 @@ app.post('/api/register',
   }
 });
 
-app.post('/api/login',
-  authLimiter,
-  [
-    body('username').trim().notEmpty().withMessage('Username is required'),
-    body('password').notEmpty().withMessage('Password is required')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password are required.' });
+    }
 
     const users = await readUsers();
     const user = users.find(u => u.username === username);
 
     if (!user) {
+      // Use a generic message for security to prevent username enumeration
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
+      // Use a generic message for security
       return res.status(401).json({ message: 'Invalid credentials.' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user.id, username: user.username },
-      JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
+    // Login successful. Prepare user data to send back.
+    // IMPORTANT: Never send the password hash back to the client.
     const { password: _, ...userData } = user;
 
     res.status(200).json({
       message: 'Login successful!',
-      user: userData,
-      token
+      user: userData
     });
 
   } catch (error) {
@@ -279,19 +171,14 @@ app.post('/api/login',
 });
 
 // Shop API endpoints
-app.post('/api/shops', 
-  authenticateToken,
-  [
-    body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Shop name must be 1-100 characters'),
-    body('slug').trim().isLength({ min: 1, max: 50 }).matches(/^[a-zA-Z0-9-]+$/).withMessage('Slug must contain only letters, numbers, and hyphens'),
-    body('description').optional().isLength({ max: 500 }).withMessage('Description must be under 500 characters')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.post('/api/shops', async (req, res) => {
   try {
-    const { name, slug, description, isPublic } = req.body;
-    const ownerId = req.user.id; // Get from authenticated user
+    const { name, slug, description, isPublic, ownerId } = req.body;
     
+    if (!name || !slug || !ownerId) {
+      return res.status(400).json({ message: 'Name, slug, and owner ID are required.' });
+    }
+
     const shops = await readShops();
     const shopExists = shops.find(shop => shop.slug === slug);
 
@@ -299,7 +186,7 @@ app.post('/api/shops',
       return res.status(409).json({ message: 'Shop with this slug already exists.' });
     }
 
-    const newShop = {
+const newShop = {
       id: Date.now().toString(),
       name,
       slug,
@@ -332,19 +219,9 @@ app.post('/api/shops',
   }
 });
 
-app.get('/api/shops/user/:userId', 
-  authenticateToken,
-  param('userId').isString().withMessage('Invalid user ID'),
-  handleValidationErrors,
-  async (req, res) => {
+app.get('/api/shops/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    // Users can only access their own shops
-    if (req.user.id !== userId) {
-      return res.status(403).json({ message: 'Access denied.' });
-    }
-    
     const shops = await readShops();
     const userShops = shops.filter(shop => shop.ownerId === userId);
     res.json(userShops);
@@ -354,11 +231,7 @@ app.get('/api/shops/user/:userId',
   }
 });
 
-// Public endpoint for viewing shops by slug
-app.get('/api/shops/slug/:slug', 
-  param('slug').matches(/^[a-zA-Z0-9-]+$/).withMessage('Invalid slug format'),
-  handleValidationErrors,
-  async (req, res) => {
+app.get('/api/shops/slug/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
     const shops = await readShops();
@@ -375,15 +248,7 @@ app.get('/api/shops/slug/:slug',
   }
 });
 
-app.put('/api/shops/:id', 
-  authenticateToken,
-  [
-    param('id').isString().withMessage('Invalid shop ID'),
-    body('name').optional().trim().isLength({ min: 1, max: 100 }).withMessage('Shop name must be 1-100 characters'),
-    body('description').optional().isLength({ max: 500 }).withMessage('Description must be under 500 characters')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.put('/api/shops/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, isPublic, accessCode, shopStyle, deliveryCities, paymentMethods, deliveryOptions, cryptoWallets, shopColors } = req.body;
@@ -393,11 +258,6 @@ app.put('/api/shops/:id',
 
     if (shopIndex === -1) {
       return res.status(404).json({ message: 'Shop not found.' });
-    }
-
-    // Check ownership
-    if (shops[shopIndex].ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied. You can only edit your own shops.' });
     }
 
     shops[shopIndex] = {
@@ -423,26 +283,16 @@ app.put('/api/shops/:id',
   }
 });
 
-app.delete('/api/shops/:id', 
-  authenticateToken,
-  param('id').isString().withMessage('Invalid shop ID'),
-  handleValidationErrors,
-  async (req, res) => {
+app.delete('/api/shops/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const shops = await readShops();
-    const shop = shops.find(shop => shop.id === id);
+    const filteredShops = shops.filter(shop => shop.id !== id);
     
-    if (!shop) {
+    if (shops.length === filteredShops.length) {
       return res.status(404).json({ message: 'Shop not found.' });
     }
 
-    // Check ownership
-    if (shop.ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied. You can only delete your own shops.' });
-    }
-
-    const filteredShops = shops.filter(shop => shop.id !== id);
     await writeShops(filteredShops);
     res.json({ message: 'Shop deleted successfully.' });
   } catch (error) {
@@ -451,32 +301,20 @@ app.delete('/api/shops/:id',
   }
 });
 
-app.post('/api/shops/:id/items',
-  authenticateToken,
-  [
-    param('id').isString().withMessage('Invalid shop ID'),
-    body('name').trim().isLength({ min: 1, max: 100 }).withMessage('Item name must be 1-100 characters'),
-    body('price').isNumeric().withMessage('Price must be a valid number'),
-    body('quantity').optional().isInt({ min: 0 }).withMessage('Quantity must be a non-negative integer'),
-    body('weight').optional().isLength({ max: 50 }).withMessage('Weight must be under 50 characters'),
-    body('description').optional().isLength({ max: 500 }).withMessage('Description must be under 500 characters')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.post('/api/shops/:id/items', async (req, res) => {
   try {
     const { id } = req.params;
     const { name, price, quantity, weight, description } = req.body;
     
+    if (!name || price === undefined) {
+      return res.status(400).json({ message: 'Name and price are required.' });
+    }
+
     const shops = await readShops();
     const shopIndex = shops.findIndex(shop => shop.id === id);
 
     if (shopIndex === -1) {
       return res.status(404).json({ message: 'Shop not found.' });
-    }
-
-    // Check ownership
-    if (shops[shopIndex].ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied. You can only add items to your own shops.' });
     }
 
     const newItem = {
@@ -501,19 +339,7 @@ app.post('/api/shops/:id/items',
   }
 });
 
-app.put('/api/shops/:shopId/items/:itemId',
-  authenticateToken,
-  [
-    param('shopId').isString().withMessage('Invalid shop ID'),
-    param('itemId').isString().withMessage('Invalid item ID'),
-    body('name').optional().trim().isLength({ min: 1, max: 100 }).withMessage('Item name must be 1-100 characters'),
-    body('price').optional().isNumeric().withMessage('Price must be a valid number'),
-    body('quantity').optional().isInt({ min: 0 }).withMessage('Quantity must be a non-negative integer'),
-    body('weight').optional().isLength({ max: 50 }).withMessage('Weight must be under 50 characters'),
-    body('description').optional().isLength({ max: 500 }).withMessage('Description must be under 500 characters')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.put('/api/shops/:shopId/items/:itemId', async (req, res) => {
   try {
     const { shopId, itemId } = req.params;
     const { name, price, quantity, weight, description, imageUrl } = req.body;
@@ -523,11 +349,6 @@ app.put('/api/shops/:shopId/items/:itemId',
 
     if (shopIndex === -1) {
       return res.status(404).json({ message: 'Shop not found.' });
-    }
-
-    // Check ownership
-    if (shops[shopIndex].ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied. You can only edit items in your own shops.' });
     }
 
     const itemIndex = shops[shopIndex].items.findIndex(item => item.id === itemId);
@@ -555,14 +376,7 @@ app.put('/api/shops/:shopId/items/:itemId',
   }
 });
 
-app.delete('/api/shops/:shopId/items/:itemId',
-  authenticateToken,
-  [
-    param('shopId').isString().withMessage('Invalid shop ID'),
-    param('itemId').isString().withMessage('Invalid item ID')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.delete('/api/shops/:shopId/items/:itemId', async (req, res) => {
   try {
     const { shopId, itemId } = req.params;
     
@@ -571,11 +385,6 @@ app.delete('/api/shops/:shopId/items/:itemId',
 
     if (shopIndex === -1) {
       return res.status(404).json({ message: 'Shop not found.' });
-    }
-
-    // Check ownership
-    if (shops[shopIndex].ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied. You can only delete items from your own shops.' });
     }
 
     const originalLength = shops[shopIndex].items.length;
@@ -595,35 +404,24 @@ app.delete('/api/shops/:shopId/items/:itemId',
 });
 
 // Messages API endpoints  
-app.get('/api/messages',
-  authenticateToken,
-  async (req, res) => {
+app.get('/api/messages', async (req, res) => {
   try {
     const messages = await readMessages();
-    // Users can only see messages they sent or received
-    const userMessages = messages.filter(msg => 
-      msg.senderId === req.user.id || msg.receiverId === req.user.id
-    );
-    res.json(userMessages);
+    res.json(messages);
   } catch (error) {
     console.error('Get Messages Error:', error);
     res.status(500).json({ message: 'An internal server error occurred.' });
   }
 });
 
-app.post('/api/messages',
-  authenticateToken,
-  [
-    body('receiverId').trim().notEmpty().withMessage('Receiver ID is required'),
-    body('content').trim().isLength({ min: 1, max: 1000 }).withMessage('Content must be 1-1000 characters'),
-    body('type').optional().isIn(['text', 'image', 'file']).withMessage('Invalid message type')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.post('/api/messages', async (req, res) => {
   try {
-    const { receiverId, content, type } = req.body;
-    const senderId = req.user.id; // Get from authenticated user
+    const { senderId, receiverId, content, type } = req.body;
     
+    if (!senderId || !receiverId || !content) {
+      return res.status(400).json({ message: 'Sender ID, receiver ID, and content are required.' });
+    }
+
     const messages = await readMessages();
     const newMessage = {
       id: Date.now().toString(),
@@ -644,19 +442,9 @@ app.post('/api/messages',
   }
 });
 
-app.get('/api/messages/:userId',
-  authenticateToken,
-  param('userId').isString().withMessage('Invalid user ID'),
-  handleValidationErrors,
-  async (req, res) => {
+app.get('/api/messages/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    
-    // Users can only access messages where they are sender or receiver
-    if (req.user.id !== userId) {
-      return res.status(403).json({ message: 'Access denied.' });
-    }
-    
     const messages = await readMessages();
     const userMessages = messages.filter(msg => 
       msg.senderId === userId || msg.receiverId === userId
@@ -669,27 +457,12 @@ app.get('/api/messages/:userId',
 });
 
 // Orders API endpoints
-// Public endpoint for creating orders (customers can place orders without authentication)
-app.post('/api/orders',
-  [
-    body('shopId').trim().notEmpty().withMessage('Shop ID is required'),
-    body('items').isArray({ min: 1 }).withMessage('Items array is required and must not be empty'),
-    body('total').isNumeric().withMessage('Total must be a valid number'),
-    body('paymentMethod').isIn(['credit-card', 'bitcoin', 'cash']).withMessage('Invalid payment method'),
-    body('deliveryOption').isIn(['Ship2', 'Deaddrop']).withMessage('Invalid delivery option'),
-    body('customerEmail').optional().isEmail().withMessage('Valid email is required'),
-    body('deliveryAddress').optional().trim().isLength({ max: 500 }).withMessage('Delivery address must be under 500 characters')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.post('/api/orders', async (req, res) => {
   try {
     const { shopId, customerId, customerEmail, items, total, paymentMethod, deliveryOption, deliveryCity, deliveryAddress, cryptoWallet } = req.body;
     
-    // Verify the shop exists
-    const shops = await readShops();
-    const shop = shops.find(s => s.id === shopId);
-    if (!shop) {
-      return res.status(404).json({ message: 'Shop not found.' });
+    if (!shopId || !items || !total || !paymentMethod || !deliveryOption) {
+      return res.status(400).json({ message: 'Required fields missing.' });
     }
 
     const orders = await readOrders();
@@ -719,25 +492,9 @@ app.post('/api/orders',
   }
 });
 
-app.get('/api/orders/shop/:shopId',
-  authenticateToken,
-  param('shopId').isString().withMessage('Invalid shop ID'),
-  handleValidationErrors,
-  async (req, res) => {
+app.get('/api/orders/shop/:shopId', async (req, res) => {
   try {
     const { shopId } = req.params;
-    
-    // Verify user owns the shop
-    const shops = await readShops();
-    const shop = shops.find(s => s.id === shopId);
-    if (!shop) {
-      return res.status(404).json({ message: 'Shop not found.' });
-    }
-    
-    if (shop.ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied. You can only view orders for your own shops.' });
-    }
-    
     const orders = await readOrders();
     const shopOrders = orders.filter(order => order.shopId === shopId);
     res.json(shopOrders);
@@ -747,19 +504,9 @@ app.get('/api/orders/shop/:shopId',
   }
 });
 
-app.get('/api/orders/customer/:customerId',
-  authenticateToken,
-  param('customerId').isString().withMessage('Invalid customer ID'),
-  handleValidationErrors,
-  async (req, res) => {
+app.get('/api/orders/customer/:customerId', async (req, res) => {
   try {
     const { customerId } = req.params;
-    
-    // Users can only access their own orders
-    if (req.user.id !== customerId) {
-      return res.status(403).json({ message: 'Access denied.' });
-    }
-    
     const orders = await readOrders();
     const customerOrders = orders.filter(order => order.customerId === customerId);
     res.json(customerOrders);
@@ -769,30 +516,21 @@ app.get('/api/orders/customer/:customerId',
   }
 });
 
-app.put('/api/orders/:id/status',
-  authenticateToken,
-  [
-    param('id').isString().withMessage('Invalid order ID'),
-    body('status').isIn(['pending', 'accepted', 'preparing', 'delivering', 'delivered', 'cancelled', 'refused']).withMessage('Invalid status')
-  ],
-  handleValidationErrors,
-  async (req, res) => {
+app.put('/api/orders/:id/status', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
     
+    const validStatuses = ['pending', 'accepted', 'preparing', 'delivering', 'delivered', 'cancelled', 'refused'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status.' });
+    }
+
     const orders = await readOrders();
     const orderIndex = orders.findIndex(order => order.id === id);
 
     if (orderIndex === -1) {
       return res.status(404).json({ message: 'Order not found.' });
-    }
-
-    // Verify user owns the shop for this order
-    const shops = await readShops();
-    const shop = shops.find(s => s.id === orders[orderIndex].shopId);
-    if (!shop || shop.ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied. You can only update orders for your own shops.' });
     }
 
     orders[orderIndex].status = status;
@@ -806,28 +544,16 @@ app.put('/api/orders/:id/status',
   }
 });
 
-app.delete('/api/orders/:id',
-  authenticateToken,
-  param('id').isString().withMessage('Invalid order ID'),
-  handleValidationErrors,
-  async (req, res) => {
+app.delete('/api/orders/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const orders = await readOrders();
-    const order = orders.find(order => order.id === id);
+    const filteredOrders = orders.filter(order => order.id !== id);
     
-    if (!order) {
+    if (orders.length === filteredOrders.length) {
       return res.status(404).json({ message: 'Order not found.' });
     }
 
-    // Verify user owns the shop for this order
-    const shops = await readShops();
-    const shop = shops.find(s => s.id === order.shopId);
-    if (!shop || shop.ownerId !== req.user.id) {
-      return res.status(403).json({ message: 'Access denied. You can only delete orders for your own shops.' });
-    }
-
-    const filteredOrders = orders.filter(order => order.id !== id);
     await writeOrders(filteredOrders);
     res.json({ message: 'Order deleted successfully.' });
   } catch (error) {
