@@ -40,6 +40,15 @@ const Messages = () => {
     if (user) {
       fetchMessages();
       fetchUsers();
+      
+      // Check for contact parameter in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const contactId = urlParams.get('contact');
+      if (contactId) {
+        // Try to add the contact automatically
+        setNewContactUsername(contactId);
+        setTimeout(() => addNewContact(), 500);
+      }
     }
   }, [user]);
 
@@ -67,16 +76,24 @@ const Messages = () => {
     if (!newContactUsername.trim()) {
       toast({
         title: "Error",
-        description: "Please enter a username",
+        description: "Please enter a username or user ID",
         variant: "destructive"
       });
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/users/search/${newContactUsername}`);
+      // First, try searching by username
+      let response = await fetch(`http://localhost:3001/api/users/search/${newContactUsername}`);
+      let userData = null;
+      
+      // If username search fails, try searching by user ID
+      if (!response.ok) {
+        response = await fetch(`http://localhost:3001/api/users/${newContactUsername}`);
+      }
+      
       if (response.ok) {
-        const userData = await response.json();
+        userData = await response.json();
         if (!users.find(u => u.id === userData.id)) {
           setUsers([...users, userData]);
         }
@@ -84,12 +101,12 @@ const Messages = () => {
         setNewContactUsername('');
         toast({
           title: "Success",
-          description: "Contact added successfully"
+          description: `Contact ${userData.username} added successfully`
         });
       } else {
         toast({
           title: "Error",
-          description: "User doesn't exist",
+          description: "User not found with that username or ID",
           variant: "destructive"
         });
       }
@@ -241,7 +258,7 @@ const Messages = () => {
                   <Input
                     value={newContactUsername}
                     onChange={(e) => setNewContactUsername(e.target.value)}
-                    placeholder="Username to add"
+                    placeholder="Username or User ID"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         addNewContact();
