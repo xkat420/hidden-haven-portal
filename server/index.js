@@ -44,7 +44,7 @@ const upload = multer({
 });
 
 // Email transporter setup for contact@louve.pro
-const emailTransporter = nodemailer.createTransporter({
+const emailTransporter = nodemailer.createTransport({
   host: 'mail.privateemail.com',
   port: 465,
   secure: true, // SSL/TLS
