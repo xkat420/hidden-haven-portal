@@ -29,7 +29,7 @@ export const useNotifications = () => {
     if (!user?.emailNotifications || !user?.email || !user?.emailConfirmed) return
 
     try {
-      await fetch('http://localhost:3001/api/notifications/email', {
+      await fetch('http://localhost:3003/api/notifications/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -56,7 +56,7 @@ export const useNotifications = () => {
     const checkForNotifications = async () => {
       try {
         // Check for new messages
-        const messageResponse = await fetch(`http://localhost:3001/api/messages/${user.id}`)
+        const messageResponse = await fetch(`http://localhost:3002/api/messages/${user.id}`)
         const messages = await messageResponse.json()
         
         // Store last checked timestamp in localStorage

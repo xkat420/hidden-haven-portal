@@ -43,7 +43,7 @@ const Messages = () => {
 
   const fetchMessages = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/messages/${user?.id}`);
+      const response = await fetch(`http://localhost:3002/api/messages/${user?.id}`);
       const data = await response.json();
       setMessages(data);
     } catch (error) {

@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/hooks/useNotifications';
-import { Package, Truck, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { StatusTooltip } from '@/components/ui/status-tooltip';
+import { Package, Truck, CheckCircle, XCircle, Clock, History } from 'lucide-react';
+
+interface StatusHistory {
+  status: string;
+  timestamp: string;
+  relativeTime?: string;
+}
 
 interface Order {
   id: string;
@@ -22,16 +31,21 @@ interface Order {
   deliveryOption: string;
   deliveryAddress: string;
   status: string;
+  statusHistory?: StatusHistory[];
+  deliveryTime?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 const OrderManagement = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const { sendNotification } = useNotifications();
   const [orders, setOrders] = useState<Order[]>([]);
   const [shops, setShops] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customStatus, setCustomStatus] = useState('');
 
   useEffect(() => {
     fetchUserShops();
@@ -62,14 +76,19 @@ const OrderManagement = () => {
     }
   };
 
-  const updateOrderStatus = async (orderId: string, status: string) => {
+  const updateOrderStatus = async (orderId: string, status: string, isCustom = false) => {
     try {
+      const actualStatus = isCustom ? customStatus : status;
+      
       const response = await fetch(`http://localhost:3001/api/orders/${orderId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ 
+          status: actualStatus,
+          customStatus: isCustom ? actualStatus : null 
+        }),
       });
 
       if (response.ok) {
@@ -79,25 +98,43 @@ const OrderManagement = () => {
         ));
         
         toast({
-          title: "Success",
-          description: `Order status updated to ${status}`
+          title: t('save'),
+          description: `Order status updated to ${actualStatus}`
         });
 
         // Send browser notification for significant status changes
-        if (['accepted', 'preparing', 'delivering', 'delivered'].includes(status)) {
+        if (['accepted', 'preparing', 'delivering', 'delivered'].includes(actualStatus)) {
           sendNotification({
             title: 'Order Status Updated',
-            body: `Order #${orderId} is now ${status}`,
-            data: { orderId, status, type: 'order-update' }
+            body: `Order #${orderId} is now ${actualStatus}`,
+            data: { orderId, status: actualStatus, type: 'order-update' }
           });
         }
+
+        // Notify customer via notification server
+        try {
+          await fetch('http://localhost:3003/api/notifications/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user?.id,
+              title: `Order #${orderId} Status Update`,
+              message: `Your order status has been updated to: ${actualStatus}`,
+              data: { orderId, status: actualStatus, customerEmail: updatedOrder.customerEmail }
+            })
+          });
+        } catch (notificationError) {
+          console.error('Failed to send customer notification:', notificationError);
+        }
+        
+        setCustomStatus('');
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update order status",
-        variant: "destructive"
-      });
+        toast({
+          title: "Error",
+          description: "Failed to update order status",
+          variant: "destructive"
+        });
     }
   };
 
@@ -140,7 +177,7 @@ const OrderManagement = () => {
     <div className="min-h-screen bg-background bg-mesh-dark p-4 sm:p-8">
       <div className="max-w-6xl mx-auto animate-fade-in">
         <h1 className="text-3xl font-bold mb-8 bg-gradient-primary bg-clip-text text-transparent">
-          Order Management
+          {t('orderManagement')}
         </h1>
 
         <div className="space-y-4">
@@ -152,14 +189,22 @@ const OrderManagement = () => {
                     <CardTitle className="flex items-center gap-2">
                       {getStatusIcon(order.status)}
                       Order #{order.id}
+                      <StatusTooltip status={order.status} />
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
                       {order.customerEmail} • {new Date(order.createdAt).toLocaleDateString()}
                     </p>
+                    {order.deliveryTime && (
+                      <p className="text-xs text-primary">
+                        Delivery time: {order.deliveryTime}
+                      </p>
+                    )}
                   </div>
-                  <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
-                    {order.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
+                      {t(order.status as any) || order.status}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -175,41 +220,80 @@ const OrderManagement = () => {
                       ))}
                     </div>
                   </div>
+                  
+                  {/* Status History */}
+                  {order.statusHistory && order.statusHistory.length > 1 && (
+                    <div className="mt-4">
+                      <h4 className="font-medium mb-2 flex items-center gap-2">
+                        <History className="w-4 h-4" />
+                        Status History:
+                      </h4>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {order.statusHistory.slice().reverse().map((history, index) => (
+                          <div key={index} className="flex justify-between text-xs p-2 bg-muted/50 rounded">
+                            <span>{t(history.status as any) || history.status}</span>
+                            <span>{new Date(history.timestamp).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="border-t pt-2">
                     <div className="flex justify-between font-bold">
                       <span>Total: ${order.total.toFixed(2)}</span>
                       <span>{order.paymentMethod} • {order.deliveryOption}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {order.status === 'pending' && (
-                      <>
-                        <Button size="sm" onClick={() => updateOrderStatus(order.id, 'accepted')}>
-                          Accept
+                  <div className="space-y-3">
+                    <div className="flex gap-2 flex-wrap">
+                      {order.status === 'pending' && (
+                        <>
+                          <Button size="sm" onClick={() => updateOrderStatus(order.id, 'accepted')}>
+                            {t('accepted')}
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => updateOrderStatus(order.id, 'refused')}>
+                            {t('refused')}
+                          </Button>
+                        </>
+                      )}
+                      {order.status === 'accepted' && (
+                        <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')}>
+                          Start {t('preparing')}
                         </Button>
-                        <Button size="sm" variant="destructive" onClick={() => updateOrderStatus(order.id, 'refused')}>
-                          Refuse
+                      )}
+                      {order.status === 'preparing' && (
+                        <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivering')}>
+                          {t('delivering')}
                         </Button>
-                      </>
-                    )}
-                    {order.status === 'accepted' && (
-                      <Button size="sm" onClick={() => updateOrderStatus(order.id, 'preparing')}>
-                        Start Preparing
+                      )}
+                      {order.status === 'delivering' && (
+                        <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivered')}>
+                          {t('delivered')}
+                        </Button>
+                      )}
+                      <Button size="sm" variant="outline" onClick={() => deleteOrder(order.id)}>
+                        {t('delete')}
                       </Button>
-                    )}
-                    {order.status === 'preparing' && (
-                      <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivering')}>
-                        Out for Delivery
+                    </div>
+                    
+                    {/* Custom Status Input */}
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        placeholder="Custom status..."
+                        value={customStatus}
+                        onChange={(e) => setCustomStatus(e.target.value)}
+                        className="flex-1"
+                      />
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => updateOrderStatus(order.id, '', true)}
+                        disabled={!customStatus.trim()}
+                      >
+                        Set Custom
                       </Button>
-                    )}
-                    {order.status === 'delivering' && (
-                      <Button size="sm" onClick={() => updateOrderStatus(order.id, 'delivered')}>
-                        Mark Delivered
-                      </Button>
-                    )}
-                    <Button size="sm" variant="outline" onClick={() => deleteOrder(order.id)}>
-                      Delete
-                    </Button>
+                    </div>
                   </div>
                 </div>
               </CardContent>

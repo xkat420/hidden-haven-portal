@@ -67,6 +67,7 @@ const PublicShopPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('');
   const [deliveryOption, setDeliveryOption] = useState('');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
   const [showCheckout, setShowCheckout] = useState(false);
 
   useEffect(() => {
@@ -162,10 +163,10 @@ const PublicShopPage = () => {
   };
 
   const handleCheckout = async () => {
-    if (!paymentMethod || !deliveryOption) {
+    if (!customerEmail || !paymentMethod || !deliveryOption) {
       toast({
         title: "Missing information",
-        description: "Please select payment method and delivery option",
+        description: "Please provide customer email, payment method and delivery option",
         variant: "destructive"
       });
       return;
@@ -184,6 +185,7 @@ const PublicShopPage = () => {
     try {
       const orderData = {
         shopId: shop?.id,
+        customerEmail,
         items: cart,
         total: getTotalPrice(),
         paymentMethod,
@@ -416,6 +418,18 @@ const PublicShopPage = () => {
                 <CardDescription>Complete your order</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="customer-email">Customer Email</Label>
+                  <Input
+                    id="customer-email"
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    required
+                  />
+                </div>
+
                 <div>
                   <Label>Payment Method</Label>
                   <select
