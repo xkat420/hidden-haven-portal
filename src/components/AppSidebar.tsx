@@ -43,19 +43,19 @@ export function AppSidebar() {
   if (!user) return null
 
   return (
-    <Sidebar className={`${collapsed ? "w-16" : "w-64"} bg-sidebar-background text-sidebar-foreground border-r border-sidebar-border`} collapsible="icon">
+    <Sidebar className={`${collapsed ? "w-16" : "w-64"} bg-black text-white border-r border-gray-800`} collapsible="icon">
       <SidebarContent className="p-2">
         {/* App Header */}
         <div className={`transition-all duration-300 mb-6 ${collapsed ? "px-2" : "px-4"}`}>
           <div className={`${collapsed ? "opacity-0 h-0 overflow-hidden" : "opacity-100"}`}>
-            <h2 className="font-bold text-lg text-sidebar-foreground">
+            <h2 className="font-bold text-lg text-white">
               Hidden Haven
             </h2>
-            <p className="text-xs text-sidebar-foreground/60">Secure Platform</p>
+            <p className="text-xs text-gray-400">Secure Platform</p>
           </div>
           {collapsed && (
-            <div className="w-8 h-8 rounded-lg bg-sidebar-primary/10 flex items-center justify-center mx-auto">
-              <Home className="w-4 h-4 text-sidebar-primary" />
+            <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center mx-auto">
+              <Home className="w-4 h-4 text-white" />
             </div>
           )}
         </div>
@@ -72,14 +72,14 @@ export function AppSidebar() {
                       className={({ isActive }) => `
                         flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
                         ${isActive 
-                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg" 
-                          : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          ? "bg-gray-800 text-white shadow-lg" 
+                          : "hover:bg-gray-900 text-gray-300 hover:text-white"
                         }
                       `}
                       title={collapsed ? item.title : undefined}
                     >
-                      <div className={`p-2 rounded-lg ${isActive(item.url) ? 'bg-sidebar-primary-foreground/20' : 'bg-sidebar/50'}`}>
-                        <item.icon className={`h-5 w-5 ${isActive(item.url) ? 'text-sidebar-primary-foreground' : item.color}`} />
+                      <div className={`p-2 rounded-lg ${isActive(item.url) ? 'bg-gray-700' : 'bg-gray-800/50'}`}>
+                        <item.icon className={`h-5 w-5 ${isActive(item.url) ? 'text-white' : 'text-gray-300'}`} />
                       </div>
                       <span className={`transition-all duration-300 font-medium ${collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}>
                         {item.title}
@@ -104,14 +104,14 @@ export function AppSidebar() {
                       className={({ isActive }) => `
                         flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
                         ${isActive 
-                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg" 
-                          : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                          ? "bg-gray-800 text-white shadow-lg" 
+                          : "hover:bg-gray-900 text-gray-300 hover:text-white"
                         }
                       `}
                       title={collapsed ? item.title : undefined}
                     >
-                      <div className={`p-2 rounded-lg ${isActive(item.url) ? 'bg-sidebar-primary-foreground/20' : 'bg-sidebar/50'}`}>
-                        <item.icon className={`h-5 w-5 ${isActive(item.url) ? 'text-sidebar-primary-foreground' : item.color}`} />
+                      <div className={`p-2 rounded-lg ${isActive(item.url) ? 'bg-gray-700' : 'bg-gray-800/50'}`}>
+                        <item.icon className={`h-5 w-5 ${isActive(item.url) ? 'text-white' : 'text-gray-300'}`} />
                       </div>
                       <span className={`transition-all duration-300 font-medium ${collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}>
                         {item.title}
