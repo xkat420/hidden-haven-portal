@@ -49,9 +49,11 @@ const emailTransporter = nodemailer.createTransport({
   port: 465,
   secure: true, // SSL/TLS
   auth: {
-    user: 'contact@louve.pro',
-    pass: 'test123' // TODO: Move to environment variable or Supabase secrets
+    user: 'noreply@hiddenhaven.pro',
+    pass: 'test123'
   }
+});
+
 // IMAP configuration for incoming emails
 const imapConfig = {
   host: 'mail.privateemail.com',
@@ -59,7 +61,7 @@ const imapConfig = {
   secure: true,
   auth: {
     user: 'contact@louve.pro',
-    pass: 'test123' // TODO: Move to environment variable or Supabase secrets
+    pass: 'test123'
   }
 };
 
@@ -74,7 +76,7 @@ const sendNotification = async (userId, type, title, message, data = {}) => {
     // Send email notification if enabled
     if (user.emailNotifications && user.email && user.emailConfirmed && type === 'email') {
       await emailTransporter.sendMail({
-        from: 'contact@louve.pro',
+        from: 'noreply@hiddenhaven.pro',
         to: user.email,
         subject: title,
         html: `
@@ -394,7 +396,7 @@ app.post('/api/users/:id/confirm-email', async (req, res) => {
     // Send confirmation email
     try {
       await emailTransporter.sendMail({
-        from: 'noreply@hiddenhaven.com',
+        from: 'noreply@hiddenhaven.pro',
         to: email,
         subject: 'Confirm your email address',
         html: `
@@ -474,7 +476,7 @@ app.post('/api/users/:id/request-email-change', async (req, res) => {
     // Send confirmation email to new address
     try {
       await emailTransporter.sendMail({
-        from: 'contact@louve.pro',
+        from: 'noreply@hiddenhaven.pro',
         to: newEmail,
         subject: 'Confirm your new email address - Hidden Haven',
         html: `

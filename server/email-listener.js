@@ -5,7 +5,7 @@ const fs = require('fs').promises;
 // IMAP configuration for contact@louve.pro
 const imapConfig = {
   user: 'contact@louve.pro',
-  password: 'YOUR_EMAIL_PASSWORD', // Replace with your actual password
+  password: 'test123',
   host: 'mail.privateemail.com',
   port: 993,
   tls: true,
