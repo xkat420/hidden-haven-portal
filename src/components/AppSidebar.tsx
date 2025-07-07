@@ -18,6 +18,7 @@ const getMainItems = (t: (key: any) => string) => [
   { title: t('dashboard'), url: "/dashboard", icon: Home, color: "text-blue-500" },
   { title: t('messages'), url: "/messages", icon: MessageSquare, color: "text-green-500" },
   { title: "My Orders", url: "/my-orders", icon: Package, color: "text-purple-500" },
+  { title: "Orders Status", url: "/orders", icon: Package, color: "text-indigo-500" },
   { title: t('userSettings'), url: "/user-settings", icon: Settings, color: "text-gray-500" },
 ];
 
@@ -42,19 +43,19 @@ export function AppSidebar() {
   if (!user) return null
 
   return (
-    <Sidebar className={`${collapsed ? "w-16" : "w-64"} bg-background/95 backdrop-blur-md border-r border-border/50`} collapsible="icon">
+    <Sidebar className={`${collapsed ? "w-16" : "w-64"} bg-sidebar backdrop-blur-md border-r border-sidebar-border`} collapsible="icon">
       <SidebarContent className="p-2">
         {/* App Header */}
         <div className={`transition-all duration-300 mb-6 ${collapsed ? "px-2" : "px-4"}`}>
           <div className={`${collapsed ? "opacity-0 h-0 overflow-hidden" : "opacity-100"}`}>
-            <h2 className="font-bold text-lg text-foreground">
+            <h2 className="font-bold text-lg text-sidebar-foreground">
               Hidden Haven
             </h2>
-            <p className="text-xs text-muted-foreground">Secure Platform</p>
+            <p className="text-xs text-sidebar-foreground/60">Secure Platform</p>
           </div>
           {collapsed && (
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center mx-auto">
-              <Home className="w-4 h-4 text-primary" />
+            <div className="w-8 h-8 rounded-lg bg-sidebar-primary/10 flex items-center justify-center mx-auto">
+              <Home className="w-4 h-4 text-sidebar-primary" />
             </div>
           )}
         </div>
@@ -71,14 +72,14 @@ export function AppSidebar() {
                       className={({ isActive }) => `
                         flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
                         ${isActive 
-                          ? "bg-primary text-primary-foreground shadow-lg" 
-                          : "hover:bg-accent hover:text-accent-foreground"
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg" 
+                          : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         }
                       `}
                       title={collapsed ? item.title : undefined}
                     >
-                      <div className={`p-2 rounded-lg ${isActive(item.url) ? 'bg-primary-foreground/20' : 'bg-background/50'}`}>
-                        <item.icon className={`h-5 w-5 ${isActive(item.url) ? 'text-primary-foreground' : item.color}`} />
+                      <div className={`p-2 rounded-lg ${isActive(item.url) ? 'bg-sidebar-primary-foreground/20' : 'bg-sidebar/50'}`}>
+                        <item.icon className={`h-5 w-5 ${isActive(item.url) ? 'text-sidebar-primary-foreground' : item.color}`} />
                       </div>
                       <span className={`transition-all duration-300 font-medium ${collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}>
                         {item.title}
@@ -103,14 +104,14 @@ export function AppSidebar() {
                       className={({ isActive }) => `
                         flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
                         ${isActive 
-                          ? "bg-primary text-primary-foreground shadow-lg" 
-                          : "hover:bg-accent hover:text-accent-foreground"
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-lg" 
+                          : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         }
                       `}
                       title={collapsed ? item.title : undefined}
                     >
-                      <div className={`p-2 rounded-lg ${isActive(item.url) ? 'bg-primary-foreground/20' : 'bg-background/50'}`}>
-                        <item.icon className={`h-5 w-5 ${isActive(item.url) ? 'text-primary-foreground' : item.color}`} />
+                      <div className={`p-2 rounded-lg ${isActive(item.url) ? 'bg-sidebar-primary-foreground/20' : 'bg-sidebar/50'}`}>
+                        <item.icon className={`h-5 w-5 ${isActive(item.url) ? 'text-sidebar-primary-foreground' : item.color}`} />
                       </div>
                       <span className={`transition-all duration-300 font-medium ${collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}>
                         {item.title}

@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Send, MessageCircle, Upload, Image, FileText } from 'lucide-react';
+import { ShopLinkPreview } from '@/components/ShopLinkPreview';
+import { formatMessageTimestamp, detectShopLinks, getReadStatusSymbol } from '@/utils/messageUtils';
 
 interface Message {
   id: string;
@@ -288,20 +290,39 @@ const Messages = () => {
                         key={message.id}
                         className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
                       >
-                         <div
-                          className={`max-w-sm p-3 rounded-2xl shadow-sm ${
+                        <div
+                          className={`max-w-sm p-4 rounded-2xl shadow-sm border ${
                             message.senderId === user?.id
-                              ? 'bg-primary text-primary-foreground ml-4'
-                              : 'bg-background border mr-4'
+                              ? 'bg-primary text-primary-foreground ml-4 border-primary/20'
+                              : 'bg-card/80 backdrop-blur-sm mr-4 border-border/50'
                           }`}
                         >
-                          <div className="flex items-center gap-2 mb-1">
-                            {getMessageIcon(message.type)}
-                            <span className="text-xs opacity-70">
-                              {new Date(message.createdAt).toLocaleTimeString()}
-                            </span>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                              {getMessageIcon(message.type)}
+                              <span className="text-xs opacity-70">
+                                {formatMessageTimestamp(message.createdAt)}
+                              </span>
+                            </div>
+                            {message.senderId === user?.id && (
+                              <span className="text-xs opacity-70">
+                                {getReadStatusSymbol(message.read)}
+                              </span>
+                            )}
                           </div>
-                          <p className="text-sm">{message.content}</p>
+                          
+                          {/* Message content with link detection */}
+                          <div className="text-sm space-y-2">
+                            {detectShopLinks(message.content).map((part, index) => (
+                              <div key={index}>
+                                {part.isShopLink && part.slug ? (
+                                  <ShopLinkPreview slug={part.slug} url={part.text} />
+                                ) : (
+                                  <span>{part.text}</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     ))
