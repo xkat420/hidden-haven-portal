@@ -50,8 +50,8 @@ const CustomerOrders = () => {
 
   const fetchCustomerOrders = async () => {
     try {
-      console.log('Fetching orders for user:', user?.email);
-      const response = await fetch(`http://localhost:3001/api/orders/customer/${encodeURIComponent(user?.email || '')}`);
+      console.log('Fetching orders for user ID:', user?.id);
+      const response = await fetch(`http://localhost:3001/api/orders/customer/${user?.id}`);
       console.log('Response status:', response.status);
       
       if (!response.ok) {
