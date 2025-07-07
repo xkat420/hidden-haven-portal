@@ -59,19 +59,42 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 
+// Comprehensive logging middleware
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  next();
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('ERROR CAUGHT:', err);
+  console.error('Error stack:', err.stack);
+  console.error('Request:', req.method, req.path);
+  console.error('Body:', req.body);
+  res.status(500).json({ message: 'Internal server error', error: err.message });
+});
+
 // Authentication middleware
 const authenticateToken = (req, res, next) => {
+  console.log('Auth middleware called for:', req.path);
   const authHeader = req.headers['authorization'];
+  console.log('Auth header:', authHeader);
   const token = authHeader && authHeader.split(' ')[1];
+  console.log('Token extracted:', token);
 
   if (!token) {
+    console.log('No token provided');
     return res.status(401).json({ message: 'Access token required' });
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
+      console.log('JWT verification error:', err);
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
+    console.log('JWT verified, user:', user);
     req.user = user;
     next();
   });
@@ -79,13 +102,16 @@ const authenticateToken = (req, res, next) => {
 
 // Input validation middleware
 const handleValidationErrors = (req, res, next) => {
+  console.log('Validation middleware called');
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Validation errors:', errors.array());
     return res.status(400).json({ 
       message: 'Validation failed', 
       errors: errors.array().map(err => ({ field: err.path, message: err.msg }))
     });
   }
+  console.log('Validation passed');
   next();
 };
 

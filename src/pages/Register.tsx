@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/lib/api";
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -31,21 +32,18 @@ const Register = () => {
     }
 
     try {
-      const response = await fetch("http://localhost:3001/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: formData.username, password: formData.password, inviteCode: formData.inviteCode })
+      console.log('Registration attempt with:', formData.username);
+      const data = await api.post('/api/register', { 
+        username: formData.username, 
+        password: formData.password, 
+        inviteCode: formData.inviteCode 
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Something went wrong");
-      }
-
+      console.log('Registration response:', data);
+      
       setSuccess(true);
     } catch (err: any) {
-      if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      console.error('Registration error:', err);
+      if (err.message === 'Failed to fetch') {
         setError('Network Error: Could not connect to the server. Please ensure it is running.');
       } else {
         setError(err.message || "An unexpected error occurred.");
