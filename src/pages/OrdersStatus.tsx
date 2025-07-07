@@ -21,6 +21,7 @@ interface Order {
   ownerName: string;
   ownerId: string;
   customerEmail: string;
+  customerId: string;
   items: Array<{
     id: string;
     name: string;
@@ -233,7 +234,7 @@ const OrdersStatus = () => {
                       <h4 className="font-semibold">Actions</h4>
                       <div className="flex flex-col gap-2">
                         <Button variant="outline" size="sm" asChild>
-                          <Link to={`/messages?contact=${order.customerEmail}`}>
+                          <Link to={`/messages?contact=${order.customerId || order.customerEmail}`}>
                             <MessageSquare className="w-4 h-4 mr-2" />
                             Message Customer
                           </Link>

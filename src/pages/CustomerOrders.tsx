@@ -50,9 +50,12 @@ const CustomerOrders = () => {
 
   const fetchCustomerOrders = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/orders/customer/${user?.email}`);
+      const response = await fetch(`http://localhost:3001/api/orders/customer/${encodeURIComponent(user?.email || '')}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
       const customerOrders = await response.json();
-      setOrders(customerOrders);
+      setOrders(Array.isArray(customerOrders) ? customerOrders : []);
     } catch (error) {
       toast({
         title: "Error",
