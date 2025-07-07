@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Send, MessageCircle, Upload, Image, FileText } from 'lucide-react';
 
 interface Message {
@@ -25,6 +26,7 @@ interface User {
 const Messages = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { sendBrowserNotification } = useNotifications();
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');
@@ -87,17 +89,6 @@ const Messages = () => {
           description: "Contact added successfully"
         });
       } else {
-        // Simulate message from non-existent user
-        const fakeMessage = {
-          id: Date.now().toString(),
-          senderId: 'fake-user',
-          receiverId: user?.id || '',
-          content: "User doesn't exist.",
-          type: 'text' as const,
-          createdAt: new Date().toISOString(),
-          read: false
-        };
-        setMessages(prev => [...prev, fakeMessage]);
         toast({
           title: "Error",
           description: "User doesn't exist",
@@ -222,20 +213,24 @@ const Messages = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background bg-mesh-dark p-4 sm:p-8">
+    <div className="min-h-screen bg-background bg-mesh-dark p-4 sm:p-8 transition-all duration-300">
       <div className="max-w-6xl mx-auto animate-fade-in">
         <header className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-3">
-            <MessageCircle />
+          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-3 hover-scale">
+            <MessageCircle className="animate-glow-pulse" />
             Messages
           </h1>
+          <p className="text-muted-foreground mt-2">Connect with users securely and privately</p>
         </header>
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Users List */}
-          <Card className="border-primary/20 shadow-secure">
+          <Card className="border-primary/20 shadow-secure glass backdrop-blur-sm hover:shadow-glow transition-all duration-300">
             <CardHeader>
-              <CardTitle>Contacts</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                Contacts
+              </CardTitle>
               <CardDescription>Select a user to message</CardDescription>
             </CardHeader>
             <CardContent>
@@ -271,13 +266,17 @@ const Messages = () => {
 
           {/* Chat Area */}
           <div className="lg:col-span-2">
-            <Card className="border-primary/20 shadow-secure h-96">
+            <Card className="border-primary/20 shadow-secure glass backdrop-blur-sm hover:shadow-glow transition-all duration-300 h-[600px] flex flex-col">
               <CardHeader>
-                <CardTitle>
-                  {selectedUser ? 
-                    `Chat with ${users.find(u => u.id === selectedUser)?.username}` : 
+                <CardTitle className="flex items-center gap-2">
+                  {selectedUser ? (
+                    <>
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      Chat with {users.find(u => u.id === selectedUser)?.username}
+                    </>
+                  ) : (
                     'Select a contact to start messaging'
-                  }
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col h-full">

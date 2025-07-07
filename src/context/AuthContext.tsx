@@ -11,6 +11,7 @@ interface User {
   emailNotifications: boolean;
   messageNotifications: boolean;
   showMessageContent: boolean;
+  browserNotifications?: boolean;
   createdAt: string;
 }
 

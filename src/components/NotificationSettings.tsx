@@ -55,6 +55,29 @@ export function NotificationSettings() {
   const updateSettings = async (key: string, value: boolean) => {
     if (!user) return
 
+    // Handle browser notifications specially
+    if (key === 'browserNotifications' && value) {
+      if ("Notification" in window) {
+        const permission = await Notification.requestPermission()
+        setBrowserPermission(permission)
+        
+        if (permission !== "granted") {
+          toast({
+            title: "Permission denied",
+            description: "Browser notifications require permission to be enabled.",
+            variant: "destructive"
+          })
+          return
+        }
+        
+        // Test notification
+        new Notification("Hidden Haven", {
+          body: "Browser notifications are now enabled!",
+          icon: "/favicon.ico"
+        })
+      }
+    }
+
     try {
       const updatedSettings = { ...settings, [key]: value }
       setSettings(updatedSettings)
@@ -66,7 +89,8 @@ export function NotificationSettings() {
         body: JSON.stringify({
           emailNotifications: updatedSettings.emailNotifications,
           messageNotifications: updatedSettings.messageNotifications,
-          showMessageContent: updatedSettings.showMessageContent
+          showMessageContent: updatedSettings.showMessageContent,
+          browserNotifications: updatedSettings.browserNotifications
         })
       })
 
@@ -85,6 +109,9 @@ export function NotificationSettings() {
         description: "Failed to update settings. Please try again.",
         variant: "destructive"
       })
+      
+      // Revert settings on error
+      setSettings(prev => ({ ...prev, [key]: !value }))
     }
   }
 
@@ -151,24 +178,11 @@ export function NotificationSettings() {
                 Receive notifications in your browser
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              {browserPermission === "granted" ? (
-                <Switch
-                  id="browser-notifications"
-                  checked={settings.browserNotifications}
-                  onCheckedChange={(checked) => setSettings(prev => ({ ...prev, browserNotifications: checked }))}
-                />
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={requestBrowserPermission}
-                  disabled={browserPermission === "denied"}
-                >
-                  {browserPermission === "denied" ? "Blocked" : "Enable"}
-                </Button>
-              )}
-            </div>
+            <Switch
+              id="browser-notifications"
+              checked={settings.browserNotifications}
+              onCheckedChange={(checked) => updateSettings('browserNotifications', checked)}
+            />
           </div>
         </div>
 

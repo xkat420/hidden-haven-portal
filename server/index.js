@@ -50,11 +50,53 @@ const emailTransporter = nodemailer.createTransport({
   secure: true, // SSL/TLS
   auth: {
     user: 'contact@louve.pro',
-    pass: 'YOUR_EMAIL_PASSWORD' // Replace with your actual password
+    pass: 'test123' // TODO: Move to environment variable or Supabase secrets
   }
-});
+// IMAP configuration for incoming emails
+const imapConfig = {
+  host: 'mail.privateemail.com',
+  port: 993,
+  secure: true,
+  auth: {
+    user: 'contact@louve.pro',
+    pass: 'test123' // TODO: Move to environment variable or Supabase secrets
+  }
+};
 
-// Configure CORS to allow both typical ports
+// Notification service
+const sendNotification = async (userId, type, title, message, data = {}) => {
+  try {
+    const users = await readUsers();
+    const user = users.find(u => u.id === userId);
+    
+    if (!user) return;
+
+    // Send email notification if enabled
+    if (user.emailNotifications && user.email && user.emailConfirmed && type === 'email') {
+      await emailTransporter.sendMail({
+        from: 'contact@louve.pro',
+        to: user.email,
+        subject: title,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">${title}</h2>
+            <p style="color: #666; line-height: 1.6;">${message}</p>
+            ${data.content ? `<div style="background: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px;"><p>${data.content}</p></div>` : ''}
+            <hr style="margin: 20px 0;">
+            <p style="color: #999; font-size: 12px;">
+              You received this notification because you have email notifications enabled. 
+              You can disable them in your account settings.
+            </p>
+          </div>
+        `
+      });
+    }
+
+    console.log(`Notification sent to user ${userId}: ${title}`);
+  } catch (error) {
+    console.error('Failed to send notification:', error);
+  }
+};
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:8080', 'http://localhost:3000'],
   credentials: true,
@@ -184,6 +226,7 @@ app.post('/api/register', async (req, res) => {
       emailNotifications: true,
       messageNotifications: true,
       showMessageContent: true,
+      browserNotifications: false,
       createdAt: new Date().toISOString(),
     };
 
@@ -258,7 +301,7 @@ app.get('/api/users/:id', async (req, res) => {
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { username, displayName, email, emailNotifications, messageNotifications, showMessageContent } = req.body;
+    const { username, displayName, email, emailNotifications, messageNotifications, showMessageContent, browserNotifications } = req.body;
     
     const users = await readUsers();
     const userIndex = users.findIndex(u => u.id === id);
@@ -283,6 +326,7 @@ app.put('/api/users/:id', async (req, res) => {
       emailNotifications: emailNotifications !== undefined ? emailNotifications : users[userIndex].emailNotifications,
       messageNotifications: messageNotifications !== undefined ? messageNotifications : users[userIndex].messageNotifications,
       showMessageContent: showMessageContent !== undefined ? showMessageContent : users[userIndex].showMessageContent,
+      browserNotifications: browserNotifications !== undefined ? browserNotifications : users[userIndex].browserNotifications,
       updatedAt: new Date().toISOString()
     };
 
@@ -774,10 +818,11 @@ app.get('/api/messages', async (req, res) => {
   }
 });
 
+// Enhanced message sending with notifications
 app.post('/api/messages', async (req, res) => {
   try {
     const { senderId, receiverId, content, type, imageUrl } = req.body;
-    
+
     if (!senderId || !receiverId) {
       return res.status(400).json({ message: 'Sender ID and receiver ID are required.' });
     }
@@ -796,6 +841,24 @@ app.post('/api/messages', async (req, res) => {
 
     messages.push(newMessage);
     await writeMessages(messages);
+
+    // Send notification to receiver
+    const users = await readUsers();
+    const receiver = users.find(u => u.id === receiverId);
+    const sender = users.find(u => u.id === senderId);
+    
+    if (receiver && sender && receiver.messageNotifications && content) {
+      await sendNotification(
+        receiverId, 
+        'email', 
+        'New Message from ' + (sender.displayName || sender.username),
+        receiver.showMessageContent 
+          ? content.substring(0, 100) + (content.length > 100 ? '...' : '')
+          : 'You have received a new message',
+        { messageId: newMessage.id, senderName: sender.displayName || sender.username }
+      );
+    }
+
     res.status(201).json(newMessage);
   } catch (error) {
     console.error('Send Message Error:', error);
@@ -938,6 +1001,18 @@ app.get('/api/users/search/:username', async (req, res) => {
   } catch (error) {
     console.error('User search error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Email notification endpoint
+app.post('/api/notifications/email', async (req, res) => {
+  try {
+    const { userId, title, message, data } = req.body;
+    await sendNotification(userId, 'email', title, message, data);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Email notification error:', error);
+    res.status(500).json({ message: 'Failed to send notification' });
   }
 });
 
