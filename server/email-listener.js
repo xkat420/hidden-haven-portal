@@ -4,12 +4,11 @@ const fs = require('fs').promises;
 
 // IMAP configuration for contact@louve.pro
 const imapConfig = {
-  user: 'contact@louve.pro',
-  password: 'test123',
+  user: 'noreply@hiddenhaven.pro',
+  password: 'test123', // Replace with your actual password
   host: 'mail.privateemail.com',
   port: 993,
-  tls: true,
-  tlsOptions: { rejectUnauthorized: false }
+  tls: true
 };
 
 const EMAILS_PATH = './incoming-emails.json';

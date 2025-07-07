@@ -56,13 +56,13 @@ const emailTransporter = nodemailer.createTransport({
 
 // IMAP configuration for incoming emails
 const imapConfig = {
+
+  user: 'noreply@hiddenhaven.pro',
+  password: 'test123', // Replace with your actual password
   host: 'mail.privateemail.com',
   port: 993,
-  secure: true,
-  auth: {
-    user: 'contact@louve.pro',
-    pass: 'test123'
-  }
+  tls: true,
+  tlsOptions: { rejectUnauthorized: false }
 };
 
 // Notification service

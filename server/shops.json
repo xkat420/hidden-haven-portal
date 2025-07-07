@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1751857981433",
+    "name": "dsfd",
+    "slug": "fdsf",
+    "description": "ddsa",
+    "isPublic": false,
+    "ownerId": "1751831049491",
+    "items": [
+      {
+        "id": "1751858000233",
+        "name": "uwu",
+        "price": 10,
+        "quantity": 1,
+        "weight": "100g",
+        "description": "powerfull",
+        "imageUrl": "/uploads/1751858000212-153513284.webp",
+        "createdAt": "2025-07-07T03:13:20.233Z"
+      }
+    ],
+    "accessCode": null,
+    "shopStyle": "default",
+    "deliveryCities": [],
+    "paymentMethods": [
+      "credit-card",
+      "bitcoin",
+      "cash"
+    ],
+    "deliveryOptions": [
+      "Ship2",
+      "Deaddrop"
+    ],
+    "cryptoWallets": {},
+    "shopColors": {
+      "primary": "#000000",
+      "secondary": "#ffffff",
+      "accent": "#888888"
+    },
+    "createdAt": "2025-07-07T03:13:01.433Z",
+    "updatedAt": "2025-07-07T03:13:20.233Z"
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "1751858027266",
+    "shopId": "1751857981433",
+    "customerId": null,
+    "customerEmail": "guest@example.com",
+    "items": [
+      {
+        "id": "1751858000233",
+        "name": "uwu",
+        "price": 10,
+        "quantity": 1,
+        "weight": "100g",
+        "description": "powerfull",
+        "imageUrl": "/uploads/1751858000212-153513284.webp",
+        "createdAt": "2025-07-07T03:13:20.233Z",
+        "cartQuantity": 1
+      }
+    ],
+    "total": 10,
+    "paymentMethod": "credit-card",
+    "deliveryOption": "Ship2",
+    "deliveryCity": "",
+    "deliveryAddress": "Mx 902",
+    "cryptoWallet": "",
+    "status": "pending",
+    "createdAt": "2025-07-07T03:13:47.266Z",
+    "updatedAt": "2025-07-07T03:13:47.266Z"
+  }
+]
