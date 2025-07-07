@@ -33,7 +33,7 @@ const Login = () => {
         throw new Error(data.message || "Failed to login");
       }
 
-      auth.login(data.user);
+      auth.login(data.user, data.token);
       navigate("/dashboard");
 
     } catch (err: any) {
