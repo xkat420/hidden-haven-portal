@@ -51,13 +51,23 @@ const OrdersStatus = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`http://localhost:3001/api/orders/customer/${user?.email}`);
-      const customerOrders = await response.json();
-      setOrders(customerOrders);
+      // Get all user's shops first
+      const shopsResponse = await fetch(`http://localhost:3001/api/shops/user/${user?.id}`);
+      const userShops = await shopsResponse.json();
+      
+      // Fetch orders for all user's shops
+      const allOrders = [];
+      for (const shop of userShops) {
+        const ordersResponse = await fetch(`http://localhost:3001/api/orders/shop/${shop.id}`);
+        const shopOrders = await ordersResponse.json();
+        allOrders.push(...shopOrders);
+      }
+      
+      setOrders(allOrders);
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to fetch your orders",
+        description: "Failed to fetch shop orders",
         variant: "destructive"
       });
     } finally {
@@ -119,10 +129,10 @@ const OrdersStatus = () => {
             <div className="p-3 rounded-xl bg-primary/10 border border-primary/20">
               <Package className="w-8 h-8 text-primary" />
             </div>
-            Orders Status
+            Orders from Your Shops
           </h1>
           <p className="text-muted-foreground text-lg">
-            Track all your orders and their current status
+            Manage orders placed at your shops and their status
           </p>
         </header>
 
@@ -131,15 +141,15 @@ const OrdersStatus = () => {
             <CardContent className="p-12 text-center space-y-4">
               <Package className="w-20 h-20 mx-auto text-muted-foreground" />
               <div className="space-y-2">
-                <h3 className="text-2xl font-semibold">No Orders Yet</h3>
+                <h3 className="text-2xl font-semibold">No Orders from Customers Yet</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  You haven't placed any orders yet. Start exploring shops to place your first order!
+                  No customers have placed orders at your shops yet. Share your shop links to start receiving orders!
                 </p>
               </div>
               <Button asChild className="mt-4">
-                <Link to="/dashboard">
+                <Link to="/shop-management">
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  Browse Shops
+                  Manage Shops
                 </Link>
               </Button>
             </CardContent>
@@ -156,7 +166,7 @@ const OrdersStatus = () => {
                         <span className="text-xl">Order #{order.id}</span>
                       </CardTitle>
                       <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                        <span>From <strong>{order.shopName}</strong></span>
+                        <span>Customer: <strong>{order.customerEmail}</strong></span>
                         <span>•</span>
                         <span>{formatMessageTimestamp(order.createdAt)}</span>
                       </div>
@@ -223,15 +233,15 @@ const OrdersStatus = () => {
                       <h4 className="font-semibold">Actions</h4>
                       <div className="flex flex-col gap-2">
                         <Button variant="outline" size="sm" asChild>
-                          <Link to={`/messages?contact=${order.ownerId}`}>
+                          <Link to={`/messages?contact=${order.customerEmail}`}>
                             <MessageSquare className="w-4 h-4 mr-2" />
-                            Message Seller
+                            Message Customer
                           </Link>
                         </Button>
                         <Button variant="outline" size="sm" asChild>
-                          <Link to={`/shop/${order.shopId}`}>
+                          <Link to={`/order-management`}>
                             <ExternalLink className="w-4 h-4 mr-2" />
-                            Visit Shop
+                            Manage Order
                           </Link>
                         </Button>
                       </div>

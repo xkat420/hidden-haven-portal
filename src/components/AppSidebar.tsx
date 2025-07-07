@@ -43,7 +43,7 @@ export function AppSidebar() {
   if (!user) return null
 
   return (
-    <Sidebar className={`${collapsed ? "w-16" : "w-64"} bg-sidebar backdrop-blur-md border-r border-sidebar-border`} collapsible="icon">
+    <Sidebar className={`${collapsed ? "w-16" : "w-64"} bg-sidebar-background text-sidebar-foreground border-r border-sidebar-border`} collapsible="icon">
       <SidebarContent className="p-2">
         {/* App Header */}
         <div className={`transition-all duration-300 mb-6 ${collapsed ? "px-2" : "px-4"}`}>
