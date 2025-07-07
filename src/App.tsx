@@ -9,6 +9,8 @@ import ShopEditor from "./pages/ShopEditor";
 import PublicShopPage from "./pages/PublicShopPage";
 import Messages from "./pages/Messages";
 import OrderManagement from "./pages/OrderManagement";
+import UserSettings from "./pages/UserSettings";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
@@ -40,6 +42,13 @@ function App() {
         path="/order-management"
         element={<ProtectedRoute><OrderManagement /></ProtectedRoute>}
       />
+      <Route
+        path="/settings"
+        element={<ProtectedRoute><UserSettings /></ProtectedRoute>}
+      />
+
+      {/* 404 Route */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }

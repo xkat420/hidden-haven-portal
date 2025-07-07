@@ -2,6 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const fs = require('fs').promises;
+const multer = require('multer');
+const nodemailer = require('nodemailer');
+const path = require('path');
 
 const app = express();
 const PORT = 3001;
@@ -9,9 +12,47 @@ const DB_PATH = './users.json';
 const SHOPS_PATH = './shops.json';
 const MESSAGES_PATH = './messages.json';
 const ORDERS_PATH = './orders.json';
+const UPLOADS_DIR = './uploads';
+
+// Create uploads directory if it doesn't exist
+fs.mkdir(UPLOADS_DIR, { recursive: true }).catch(console.error);
 
 // A simple, hardcoded list of valid invitation codes.
 const VALID_INVITE_CODES = ['SECRET-CODE-123', 'ALPHA-INVITE-789'];
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  }
+});
+
+// Email transporter setup (configure with your SMTP settings)
+const emailTransporter = nodemailer.createTransporter({
+  host: 'localhost', // Replace with your SMTP host
+  port: 587,
+  secure: false,
+  auth: {
+    user: 'your-email@example.com', // Replace with your email
+    pass: 'your-password' // Replace with your password
+  }
+});
 
 // Configure CORS to allow both typical ports
 app.use(cors({
@@ -22,6 +63,9 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Serve uploaded images statically
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Add debugging middleware for all requests
 app.use((req, res, next) => {
@@ -133,6 +177,13 @@ app.post('/api/register', async (req, res) => {
       id: Date.now().toString(),
       username,
       password: hashedPassword,
+      displayName: username,
+      email: '',
+      profileImage: '',
+      emailConfirmed: false,
+      emailNotifications: true,
+      messageNotifications: true,
+      showMessageContent: true,
       createdAt: new Date().toISOString(),
     };
 
@@ -181,6 +232,193 @@ app.post('/api/login', async (req, res) => {
 
   } catch (error) {
     console.error('Login Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+// User profile management endpoints
+app.get('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const users = await readUsers();
+    const user = users.find(u => u.id === id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    
+    const { password: _, ...userData } = user;
+    res.json(userData);
+  } catch (error) {
+    console.error('Get User Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { username, displayName, email, emailNotifications, messageNotifications, showMessageContent } = req.body;
+    
+    const users = await readUsers();
+    const userIndex = users.findIndex(u => u.id === id);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Check if username is being changed and if it's already taken
+    if (username && username !== users[userIndex].username) {
+      const existingUser = users.find(u => u.username === username && u.id !== id);
+      if (existingUser) {
+        return res.status(409).json({ message: 'Username already taken.' });
+      }
+    }
+
+    users[userIndex] = {
+      ...users[userIndex],
+      username: username || users[userIndex].username,
+      displayName: displayName !== undefined ? displayName : users[userIndex].displayName,
+      email: email !== undefined ? email : users[userIndex].email,
+      emailNotifications: emailNotifications !== undefined ? emailNotifications : users[userIndex].emailNotifications,
+      messageNotifications: messageNotifications !== undefined ? messageNotifications : users[userIndex].messageNotifications,
+      showMessageContent: showMessageContent !== undefined ? showMessageContent : users[userIndex].showMessageContent,
+      updatedAt: new Date().toISOString()
+    };
+
+    await writeUsers(users);
+    const { password: _, ...userData } = users[userIndex];
+    res.json(userData);
+  } catch (error) {
+    console.error('Update User Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.post('/api/users/:id/upload-avatar', upload.single('avatar'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+
+    const users = await readUsers();
+    const userIndex = users.findIndex(u => u.id === id);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    users[userIndex].profileImage = imageUrl;
+    users[userIndex].updatedAt = new Date().toISOString();
+
+    await writeUsers(users);
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Upload Avatar Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.post('/api/users/:id/confirm-email', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required.' });
+    }
+
+    const users = await readUsers();
+    const userIndex = users.findIndex(u => u.id === id);
+    
+    if (userIndex === -1) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Generate confirmation code
+    const confirmationCode = Math.random().toString(36).substring(2, 15);
+    
+    users[userIndex].email = email;
+    users[userIndex].emailConfirmationCode = confirmationCode;
+    users[userIndex].updatedAt = new Date().toISOString();
+
+    await writeUsers(users);
+
+    // Send confirmation email
+    try {
+      await emailTransporter.sendMail({
+        from: 'noreply@hiddenhaven.com',
+        to: email,
+        subject: 'Confirm your email address',
+        html: `
+          <h2>Confirm your email address</h2>
+          <p>Please click the link below to confirm your email address:</p>
+          <a href="http://localhost:8080/confirm-email?code=${confirmationCode}&user=${id}">Confirm Email</a>
+          <p>If you didn't request this, please ignore this email.</p>
+        `
+      });
+    } catch (emailError) {
+      console.error('Email sending failed:', emailError);
+      // Continue anyway - email might be configured incorrectly
+    }
+
+    res.json({ message: 'Confirmation email sent.' });
+  } catch (error) {
+    console.error('Email Confirmation Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+app.post('/api/confirm-email', async (req, res) => {
+  try {
+    const { code, userId } = req.body;
+    
+    const users = await readUsers();
+    const userIndex = users.findIndex(u => u.id === userId && u.emailConfirmationCode === code);
+    
+    if (userIndex === -1) {
+      return res.status(400).json({ message: 'Invalid confirmation code.' });
+    }
+
+    users[userIndex].emailConfirmed = true;
+    delete users[userIndex].emailConfirmationCode;
+    users[userIndex].updatedAt = new Date().toISOString();
+
+    await writeUsers(users);
+    res.json({ message: 'Email confirmed successfully.' });
+  } catch (error) {
+    console.error('Email Confirmation Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
+// Shop access code endpoint
+app.post('/api/shops/:slug/verify-access', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { accessCode } = req.body;
+    
+    const shops = await readShops();
+    const shop = shops.find(s => s.slug === slug);
+    
+    if (!shop) {
+      return res.status(404).json({ message: 'Shop not found.' });
+    }
+
+    if (shop.isPublic || !shop.accessCode) {
+      return res.json({ authorized: true });
+    }
+
+    if (shop.accessCode === accessCode) {
+      return res.json({ authorized: true });
+    }
+
+    return res.status(401).json({ authorized: false, message: 'Invalid access code.' });
+  } catch (error) {
+    console.error('Shop Access Verification Error:', error);
     res.status(500).json({ message: 'An internal server error occurred.' });
   }
 });
