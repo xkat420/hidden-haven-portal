@@ -44,29 +44,31 @@ export function AppSidebar() {
 
   return (
     <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
-      <SidebarContent className="p-4">
-        <div className="mb-6">
-          <h2 className={`font-bold text-lg ${collapsed ? "hidden" : "block"}`}>
+      <SidebarContent className="p-2">
+        <div className="flex items-center justify-between mb-6 p-2">
+          <h2 className={`font-bold text-lg transition-opacity duration-200 ${collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}>
             Hidden Haven
           </h2>
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "hidden" : "block"}>
+          <SidebarGroupLabel className={`transition-opacity duration-200 px-2 ${collapsed ? "opacity-0 h-0 overflow-hidden" : "opacity-100"}`}>
             Main
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {mainItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
-                      className={({ isActive }) => getNavCls({ isActive })}
+                      className={({ isActive }) => `${getNavCls({ isActive })} transition-all duration-200 hover:bg-muted/80`}
                       title={collapsed ? item.title : undefined}
                     >
-                      <item.icon className="h-4 w-4 min-w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="h-4 w-4 min-w-4 flex-shrink-0" />
+                      <span className={`transition-all duration-200 ${collapsed ? "opacity-0 w-0 overflow-hidden ml-0" : "opacity-100 ml-2"}`}>
+                        {item.title}
+                      </span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -75,22 +77,24 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className={collapsed ? "hidden" : "block"}>
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel className={`transition-opacity duration-200 px-2 ${collapsed ? "opacity-0 h-0 overflow-hidden" : "opacity-100"}`}>
             Management
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               {managementItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
                       to={item.url} 
-                      className={({ isActive }) => getNavCls({ isActive })}
+                      className={({ isActive }) => `${getNavCls({ isActive })} transition-all duration-200 hover:bg-muted/80`}
                       title={collapsed ? item.title : undefined}
                     >
-                      <item.icon className="h-4 w-4 min-w-4" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <item.icon className="h-4 w-4 min-w-4 flex-shrink-0" />
+                      <span className={`transition-all duration-200 ${collapsed ? "opacity-0 w-0 overflow-hidden ml-0" : "opacity-100 ml-2"}`}>
+                        {item.title}
+                      </span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

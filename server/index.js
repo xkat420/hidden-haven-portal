@@ -748,6 +748,21 @@ app.delete('/api/shops/:shopId/items/:itemId', async (req, res) => {
   }
 });
 
+// Message image upload endpoint
+app.post('/api/upload-message-image', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Upload Message Image Error:', error);
+    res.status(500).json({ message: 'An internal server error occurred.' });
+  }
+});
+
 // Messages API endpoints  
 app.get('/api/messages', async (req, res) => {
   try {
@@ -761,10 +776,10 @@ app.get('/api/messages', async (req, res) => {
 
 app.post('/api/messages', async (req, res) => {
   try {
-    const { senderId, receiverId, content, type } = req.body;
+    const { senderId, receiverId, content, type, imageUrl } = req.body;
     
-    if (!senderId || !receiverId || !content) {
-      return res.status(400).json({ message: 'Sender ID, receiver ID, and content are required.' });
+    if (!senderId || !receiverId) {
+      return res.status(400).json({ message: 'Sender ID and receiver ID are required.' });
     }
 
     const messages = await readMessages();
@@ -772,8 +787,9 @@ app.post('/api/messages', async (req, res) => {
       id: Date.now().toString(),
       senderId,
       receiverId,
-      content,
+      content: content || '',
       type: type || 'text',
+      imageUrl: imageUrl || null,
       createdAt: new Date().toISOString(),
       read: false
     };

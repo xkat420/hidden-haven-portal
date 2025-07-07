@@ -7,8 +7,10 @@ import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Separator } from '../components/ui/separator';
+import { Badge } from '../components/ui/badge';
+import { Alert, AlertDescription } from '../components/ui/alert';
 import { useToast } from '../hooks/use-toast';
-import { User, Settings, Bell, Mail, Upload, Save, Shield } from 'lucide-react';
+import { User, Settings, Bell, Mail, Upload, Save, Shield, Check, X, Camera } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -38,6 +40,11 @@ export default function UserSettings() {
     emailNotifications: true,
     messageNotifications: true,
     showMessageContent: true
+  });
+  const [emailConfirmation, setEmailConfirmation] = useState({
+    pending: false,
+    newEmail: '',
+    confirmationCode: ''
   });
 
   useEffect(() => {
@@ -158,35 +165,88 @@ export default function UserSettings() {
     }
   };
 
-  const sendConfirmationEmail = async () => {
-    if (!formData.email) {
-      toast({
-        title: "Error",
-        description: "Please enter an email address first",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const requestEmailChange = async (newEmail: string) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/users/${user?.id}/confirm-email`, {
+      const response = await fetch(`http://localhost:3001/api/users/${user?.id}/request-email-change`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email })
+        body: JSON.stringify({ newEmail })
       });
 
       if (response.ok) {
+        setEmailConfirmation({ pending: true, newEmail, confirmationCode: '' });
         toast({
-          title: "Success",
-          description: "Confirmation email sent! Check your inbox.",
+          title: "Confirmation sent",
+          description: `A confirmation code has been sent to ${newEmail}`,
         });
       } else {
-        throw new Error('Failed to send email');
+        const error = await response.json();
+        throw new Error(error.message);
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to send confirmation email",
+        description: error instanceof Error ? error.message : "Failed to send confirmation",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmEmailChange = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/users/${user?.id}/confirm-email-change`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmationCode: emailConfirmation.confirmationCode })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        login(data.user);
+        setEmailConfirmation({ pending: false, newEmail: '', confirmationCode: '' });
+        fetchUserProfile();
+        toast({
+          title: "Success",
+          description: "Email address updated successfully!",
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Invalid confirmation code",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const unsubscribeEmail = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/users/${user?.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: '',
+          emailNotifications: false,
+          emailConfirmed: false
+        })
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        login(updatedUser);
+        setFormData(prev => ({ ...prev, email: '', emailNotifications: false }));
+        toast({
+          title: "Success",
+          description: "Email unsubscribed and removed from account",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to unsubscribe email",
         variant: "destructive",
       });
     }
@@ -277,39 +337,91 @@ export default function UserSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
-                Email Settings
+                Email Management
               </CardTitle>
               <CardDescription>Configure your email address and preferences</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="mt-1 glass focus:shadow-glow transition-all duration-300"
-                  />
-                </div>
-                <div className="flex items-end">
-                  {!profile?.emailConfirmed && formData.email && (
-                    <Button 
-                      onClick={sendConfirmationEmail}
-                      className="cyber-btn animate-pulse-glow"
-                    >
-                      Confirm Email
-                    </Button>
-                  )}
-                  {profile?.emailConfirmed && (
-                    <div className="flex items-center text-success">
-                      <Shield className="h-4 w-4 mr-2" />
-                      Verified
-                    </div>
+            <CardContent className="space-y-6">
+              {/* Current Email Status */}
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <p className="font-medium">Current Email</p>
+                  <p className="text-sm text-muted-foreground">
+                    {profile?.email || 'No email set'}
+                  </p>
+                  {profile?.email && (
+                    <Badge variant={profile?.emailConfirmed ? "default" : "secondary"} className="mt-1">
+                      {profile?.emailConfirmed ? (
+                        <>
+                          <Check className="h-3 w-3 mr-1" />
+                          Verified
+                        </>
+                      ) : (
+                        <>
+                          <X className="h-3 w-3 mr-1" />
+                          Unverified
+                        </>
+                      )}
+                    </Badge>
                   )}
                 </div>
+                {profile?.email && (
+                  <Button variant="destructive" size="sm" onClick={unsubscribeEmail}>
+                    Remove Email
+                  </Button>
+                )}
               </div>
+
+              {/* Email Change Form */}
+              {!emailConfirmation.pending ? (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="newEmail">
+                      {profile?.email ? 'Change Email Address' : 'Set Email Address'}
+                    </Label>
+                    <div className="flex gap-2 mt-1">
+                      <Input
+                        id="newEmail"
+                        type="email"
+                        placeholder="Enter new email address"
+                        value={emailConfirmation.newEmail}
+                        onChange={(e) => setEmailConfirmation(prev => ({ ...prev, newEmail: e.target.value }))}
+                        className="glass focus:shadow-glow transition-all duration-300"
+                      />
+                      <Button 
+                        onClick={() => requestEmailChange(emailConfirmation.newEmail)}
+                        disabled={!emailConfirmation.newEmail}
+                      >
+                        {profile?.email ? 'Change' : 'Add'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <Alert>
+                  <Mail className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="space-y-3">
+                      <p>Confirmation code sent to <strong>{emailConfirmation.newEmail}</strong></p>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Enter confirmation code"
+                          value={emailConfirmation.confirmationCode}
+                          onChange={(e) => setEmailConfirmation(prev => ({ ...prev, confirmationCode: e.target.value }))}
+                        />
+                        <Button onClick={confirmEmailChange} disabled={!emailConfirmation.confirmationCode}>
+                          Confirm
+                        </Button>
+                        <Button variant="outline" onClick={() => setEmailConfirmation({ pending: false, newEmail: '', confirmationCode: '' })}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <Separator />
               
               <div className="flex items-center justify-between">
                 <div>
@@ -319,6 +431,7 @@ export default function UserSettings() {
                 <Switch
                   checked={formData.emailNotifications}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, emailNotifications: checked }))}
+                  disabled={!profile?.email || !profile?.emailConfirmed}
                 />
               </div>
             </CardContent>
