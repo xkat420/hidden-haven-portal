@@ -37,10 +37,25 @@ const OrdersOverview = ({ userId, navigate }: OrdersOverviewProps) => {
   const fetchOrdersSummary = async () => {
     try {
       const response = await fetch(`http://localhost:3001/api/orders/user/${userId}/summary`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
       const data = await response.json();
-      setOrdersSummary(data);
+      
+      // Ensure data structure is correct
+      setOrdersSummary({
+        pendingOrders: data.pendingOrders || 0,
+        totalOrders: data.totalOrders || 0,
+        recentOrders: Array.isArray(data.recentOrders) ? data.recentOrders : []
+      });
     } catch (error) {
       console.error('Failed to fetch orders summary:', error);
+      // Set safe defaults on error
+      setOrdersSummary({
+        pendingOrders: 0,
+        totalOrders: 0,
+        recentOrders: []
+      });
     } finally {
       setLoading(false);
     }

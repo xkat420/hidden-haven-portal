@@ -1072,7 +1072,11 @@ app.get('/api/orders/user/:userId/summary', async (req, res) => {
     const userShops = shops.filter(shop => shop.ownerId === userId);
     
     if (userShops.length === 0) {
-      return res.json({ pendingOrders: 0, totalOrders: 0 });
+      return res.json({ 
+        pendingOrders: 0, 
+        totalOrders: 0, 
+        recentOrders: [] 
+      });
     }
 
     const orders = await readOrders();
@@ -1089,7 +1093,12 @@ app.get('/api/orders/user/:userId/summary', async (req, res) => {
     });
   } catch (error) {
     console.error('Get order summary error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      message: 'Server error',
+      pendingOrders: 0, 
+      totalOrders: 0, 
+      recentOrders: [] 
+    });
   }
 });
 

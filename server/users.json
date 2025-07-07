@@ -15,11 +15,15 @@
     "id": "1751860099823",
     "username": "louve3",
     "password": "$2a$10$F2ofO4i2gSbUz.iA3v47/u5jywSAsyeR6lOJI3HopeIQRKP61Qh/m",
+    "createdAt": "2025-07-07T03:48:19.823Z",
+    "updatedAt": "2025-07-07T03:48:19.823Z",
     "displayName": "louve3",
-    "email": "",
+    "email": "louve3@test.com",
+    "profileImage": "",
     "emailConfirmed": true,
     "emailNotifications": true,
     "messageNotifications": true,
-    "showMessageContent": true
+    "showMessageContent": true,
+    "browserNotifications": true
   }
 ]
