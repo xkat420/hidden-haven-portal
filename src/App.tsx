@@ -1,5 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { Routes, Route } from 'react-router-dom';
 import { Toaster } from './components/ui/toaster';
 import { SidebarProvider, SidebarTrigger } from './components/ui/sidebar';
 import { AppSidebar } from './components/AppSidebar';
@@ -18,49 +17,47 @@ import NotFound from './pages/NotFound';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/shop/:slug" element={<PublicShopPage />} />
-          
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <SidebarLayout><Dashboard /></SidebarLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/user-settings" element={
-            <ProtectedRoute>
-              <SidebarLayout><UserSettings /></SidebarLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/shop-management" element={
-            <ProtectedRoute>
-              <SidebarLayout><ShopManagement /></SidebarLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/shop-editor/:shopId" element={
-            <ProtectedRoute>
-              <SidebarLayout><ShopEditor /></SidebarLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/messages" element={
-            <ProtectedRoute>
-              <SidebarLayout><Messages /></SidebarLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="/order-management" element={
-            <ProtectedRoute>
-              <SidebarLayout><OrderManagement /></SidebarLayout>
-            </ProtectedRoute>
-          } />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-      </Router>
-    </AuthProvider>
+    <>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/shop/:slug" element={<PublicShopPage />} />
+        
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <SidebarLayout><Dashboard /></SidebarLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/user-settings" element={
+          <ProtectedRoute>
+            <SidebarLayout><UserSettings /></SidebarLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/shop-management" element={
+          <ProtectedRoute>
+            <SidebarLayout><ShopManagement /></SidebarLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/shop-editor/:shopId" element={
+          <ProtectedRoute>
+            <SidebarLayout><ShopEditor /></SidebarLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/messages" element={
+          <ProtectedRoute>
+            <SidebarLayout><Messages /></SidebarLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/order-management" element={
+          <ProtectedRoute>
+            <SidebarLayout><OrderManagement /></SidebarLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <Toaster />
+    </>
   );
 }
 
