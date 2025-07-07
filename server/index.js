@@ -43,14 +43,14 @@ const upload = multer({
   }
 });
 
-// Email transporter setup (configure with your SMTP settings)
+// Email transporter setup for contact@louve.pro
 const emailTransporter = nodemailer.createTransporter({
-  host: 'localhost', // Replace with your SMTP host
-  port: 587,
-  secure: false,
+  host: 'mail.privateemail.com',
+  port: 465,
+  secure: true, // SSL/TLS
   auth: {
-    user: 'your-email@example.com', // Replace with your email
-    pass: 'your-password' // Replace with your password
+    user: 'contact@louve.pro',
+    pass: 'YOUR_EMAIL_PASSWORD' // Replace with your actual password
   }
 });
 
