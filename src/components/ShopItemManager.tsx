@@ -18,9 +18,10 @@ interface ShopItem {
 
 interface ShopItemManagerProps {
   shopId: string;
+  categories?: string[];
 }
 
-const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
+const ShopItemManager = ({ shopId, categories = [] }: ShopItemManagerProps) => {
   const { toast } = useToast();
   const [items, setItems] = useState<ShopItem[]>([]);
   const [editingItem, setEditingItem] = useState<ShopItem | null>(null);
@@ -31,7 +32,8 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
     quantity: '',
     weight: '',
     description: '',
-    imageUrl: ''
+    category: '',
+    image: null as File | null
   });
 
   useEffect(() => {
@@ -55,7 +57,8 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
       quantity: '',
       weight: '',
       description: '',
-      imageUrl: ''
+      category: '',
+      image: null
     });
     setEditingItem(null);
     setShowForm(false);
@@ -74,6 +77,24 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
     }
 
     try {
+      let imageUrl = '';
+      
+      // Upload image if provided
+      if (formData.image) {
+        const imageFormData = new FormData();
+        imageFormData.append('image', formData.image);
+        
+        const imageResponse = await fetch('http://localhost:3001/api/upload-message-image', {
+          method: 'POST',
+          body: imageFormData,
+        });
+        
+        if (imageResponse.ok) {
+          const imageData = await imageResponse.json();
+          imageUrl = imageData.imageUrl;
+        }
+      }
+
       const url = editingItem 
         ? `http://localhost:3001/api/shops/${shopId}/items/${editingItem.id}`
         : `http://localhost:3001/api/shops/${shopId}/items`;
@@ -85,7 +106,11 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          imageUrl,
+          image: undefined // Remove file from JSON payload
+        }),
       });
 
       if (response.ok) {
@@ -120,7 +145,8 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
       quantity: item.quantity.toString(),
       weight: item.weight,
       description: item.description,
-      imageUrl: (item as any).imageUrl || ''
+      category: (item as any).category || '',
+      image: null
     });
     setShowForm(true);
   };
@@ -223,14 +249,28 @@ const ShopItemManager = ({ shopId }: ShopItemManagerProps) => {
                       placeholder="e.g. 100g, 1kg, 1 piece"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <select
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      className="w-full p-2 border rounded"
+                    >
+                      <option value="">Select category</option>
+                      {categories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <Label htmlFor="imageUrl">Image URL</Label>
+                  <Label htmlFor="image">Product Image</Label>
                   <Input
-                    id="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
-                    placeholder="https://example.com/image.jpg"
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFormData({...formData, image: e.target.files?.[0] || null})}
                   />
                 </div>
                 <div>

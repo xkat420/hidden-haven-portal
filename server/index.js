@@ -923,6 +923,24 @@ app.delete('/api/orders/:id', async (req, res) => {
   }
 });
 
+// User search endpoint
+app.get('/api/users/search/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const users = await readUsers();
+    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+    
+    if (user) {
+      res.json({ id: user.id, username: user.username });
+    } else {
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error('User search error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Secure server running on http://localhost:${PORT}`);
 });

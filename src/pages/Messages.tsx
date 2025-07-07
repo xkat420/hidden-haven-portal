@@ -30,6 +30,7 @@ const Messages = () => {
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [newContactUsername, setNewContactUsername] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -59,6 +60,56 @@ const Messages = () => {
       ]);
     } catch (error) {
       console.error('Failed to fetch users:', error);
+    }
+  };
+
+  const addNewContact = async () => {
+    if (!newContactUsername.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a username",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/users/search/${newContactUsername}`);
+      if (response.ok) {
+        const userData = await response.json();
+        if (!users.find(u => u.id === userData.id)) {
+          setUsers([...users, userData]);
+        }
+        setSelectedUser(userData.id);
+        setNewContactUsername('');
+        toast({
+          title: "Success",
+          description: "Contact added successfully"
+        });
+      } else {
+        // Simulate message from non-existent user
+        const fakeMessage = {
+          id: Date.now().toString(),
+          senderId: 'fake-user',
+          receiverId: user?.id || '',
+          content: "User doesn't exist.",
+          type: 'text' as const,
+          createdAt: new Date().toISOString(),
+          read: false
+        };
+        setMessages(prev => [...prev, fakeMessage]);
+        toast({
+          title: "Error",
+          description: "User doesn't exist",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to search user",
+        variant: "destructive"
+      });
     }
   };
 
@@ -188,17 +239,32 @@ const Messages = () => {
               <CardDescription>Select a user to message</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {users.filter(u => u.id !== user?.id).map((contact) => (
-                  <Button
-                    key={contact.id}
-                    variant={selectedUser === contact.id ? "secure" : "outline"}
-                    className="w-full justify-start"
-                    onClick={() => setSelectedUser(contact.id)}
-                  >
-                    {contact.username}
-                  </Button>
-                ))}
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    value={newContactUsername}
+                    onChange={(e) => setNewContactUsername(e.target.value)}
+                    placeholder="Username to add"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        addNewContact();
+                      }
+                    }}
+                  />
+                  <Button onClick={addNewContact}>Add</Button>
+                </div>
+                <div className="space-y-2">
+                  {users.filter(u => u.id !== user?.id).map((contact) => (
+                    <Button
+                      key={contact.id}
+                      variant={selectedUser === contact.id ? "secure" : "outline"}
+                      className="w-full justify-start"
+                      onClick={() => setSelectedUser(contact.id)}
+                    >
+                      {contact.username}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>

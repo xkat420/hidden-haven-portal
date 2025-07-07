@@ -43,8 +43,8 @@ export function AppSidebar() {
   if (!user) return null
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
-      <SidebarContent className="p-2">
+    <Sidebar className={`${collapsed ? "w-14" : "w-60"} bg-transparent backdrop-blur-sm border-primary/10`} collapsible="icon">
+      <SidebarContent className="p-2 bg-transparent">
         <div className="flex items-center justify-between mb-6 p-2">
           <h2 className={`font-bold text-lg transition-opacity duration-200 ${collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"}`}>
             Hidden Haven

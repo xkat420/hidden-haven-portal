@@ -50,6 +50,8 @@ const ShopEditor = () => {
   const [deliveryOptions, setDeliveryOptions] = useState<string[]>(['Ship2', 'Deaddrop']);
   const [cryptoWallets, setCryptoWallets] = useState<{[key: string]: string}>({});
   const [shopColors, setShopColors] = useState({ primary: '#000000', secondary: '#ffffff', accent: '#888888' });
+  const [categories, setCategories] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState('');
 
   useEffect(() => {
     if (shopId && shopId !== 'new') {
@@ -77,6 +79,7 @@ const ShopEditor = () => {
         setDeliveryOptions(currentShop.deliveryOptions || ['Ship2', 'Deaddrop']);
         setCryptoWallets(currentShop.cryptoWallets || {});
         setShopColors(currentShop.shopColors || { primary: '#000000', secondary: '#ffffff', accent: '#888888' });
+        setCategories(currentShop.categories || []);
       }
     } catch (error) {
       toast({
@@ -105,8 +108,8 @@ const ShopEditor = () => {
       
       const method = isEditing ? 'PUT' : 'POST';
       const body = isEditing 
-        ? { name, description, isPublic, accessCode, shopStyle, deliveryCities, paymentMethods, deliveryOptions, cryptoWallets, shopColors }
-        : { name, slug, description, isPublic, accessCode, shopStyle, deliveryCities, paymentMethods, deliveryOptions, cryptoWallets, shopColors, ownerId: user?.id };
+        ? { name, description, isPublic, accessCode, shopStyle, deliveryCities, paymentMethods, deliveryOptions, cryptoWallets, shopColors, categories }
+        : { name, slug, description, isPublic, accessCode, shopStyle, deliveryCities, paymentMethods, deliveryOptions, cryptoWallets, shopColors, categories, ownerId: user?.id };
 
       const response = await fetch(url, {
         method,
@@ -328,6 +331,44 @@ const ShopEditor = () => {
               </div>
 
               <div>
+                <Label>Categories</Label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    placeholder="Add category"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+                          setCategories([...categories, newCategory.trim()]);
+                          setNewCategory('');
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+                        setCategories([...categories, newCategory.trim()]);
+                        setNewCategory('');
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((category, index) => (
+                    <Badge key={index} variant="secondary" className="cursor-pointer" onClick={() => setCategories(categories.filter((_, i) => i !== index))}>
+                      {category} ×
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <Label>Delivery Cities</Label>
                 <div className="flex gap-2 mb-2">
                   <Input
@@ -372,9 +413,7 @@ const ShopEditor = () => {
             </CardContent>
           </Card>
 
-          {isEditing && shop && (
-            <ShopItemManager shopId={shop.id} />
-          )}
+          <ShopItemManager shopId={isEditing ? shop?.id : 'new'} categories={categories} />
         </div>
       </div>
     </div>
