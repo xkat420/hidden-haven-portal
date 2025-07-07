@@ -14,7 +14,6 @@ import PublicShopPage from './pages/PublicShopPage';
 import Messages from './pages/Messages';
 import CustomerOrders from './pages/CustomerOrders';
 import OrderManagement from './pages/OrderManagement';
-import OrdersStatus from './pages/OrdersStatus';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -59,11 +58,6 @@ function App() {
         <Route path="/shop-editor/:shopId" element={
           <ProtectedRoute>
             <SidebarLayout><ShopEditor /></SidebarLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/orders" element={
-          <ProtectedRoute>
-            <SidebarLayout><OrdersStatus /></SidebarLayout>
           </ProtectedRoute>
         } />
         <Route path="*" element={<NotFound />} />

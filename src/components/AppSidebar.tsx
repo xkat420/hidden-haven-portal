@@ -18,7 +18,6 @@ const getMainItems = (t: (key: any) => string) => [
   { title: t('dashboard'), url: "/dashboard", icon: Home, color: "text-blue-500" },
   { title: t('messages'), url: "/messages", icon: MessageSquare, color: "text-green-500" },
   { title: "My Orders", url: "/my-orders", icon: Package, color: "text-purple-500" },
-  { title: "Orders Status", url: "/orders", icon: Package, color: "text-indigo-500" },
   { title: t('userSettings'), url: "/user-settings", icon: Settings, color: "text-gray-500" },
 ];
 
