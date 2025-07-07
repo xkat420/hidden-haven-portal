@@ -1063,7 +1063,33 @@ app.delete('/api/orders/:id', async (req, res) => {
   }
 });
 
-// User search endpoint
+// Get orders by customer email
+app.get('/api/orders/customer/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const orders = await readOrders();
+    const shops = await readShops();
+    const users = await readUsers();
+    
+    const customerOrders = orders
+      .filter(order => order.customerEmail === email)
+      .map(order => {
+        const shop = shops.find(s => s.id === order.shopId);
+        const owner = users.find(u => u.id === shop?.ownerId);
+        return {
+          ...order,
+          shopName: shop?.name || 'Unknown Shop',
+          ownerName: owner?.username || 'Unknown',
+          ownerId: shop?.ownerId || ''
+        };
+      });
+    
+    res.json(customerOrders);
+  } catch (error) {
+    console.error('Failed to fetch customer orders:', error);
+    res.status(500).json({ error: 'Failed to fetch customer orders' });
+  }
+});
 app.get('/api/users/search/:username', async (req, res) => {
   try {
     const { username } = req.params;

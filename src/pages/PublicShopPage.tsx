@@ -6,8 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ServerCrash, ShoppingCart, Plus, Minus, MapPin } from 'lucide-react';
+import { ServerCrash, ShoppingCart, Plus, Minus, MapPin, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ShopItem {
   id: string;
@@ -26,6 +28,8 @@ interface Shop {
   description: string;
   isPublic: boolean;
   ownerId: string;
+  ownerName: string;
+  ownerDisplayName: string;
   items: ShopItem[];
   accessCode?: string;
   shopStyle?: string;
@@ -69,6 +73,8 @@ const PublicShopPage = () => {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [showCheckout, setShowCheckout] = useState(false);
+  const [showOwnerProfile, setShowOwnerProfile] = useState(false);
+  const [messageToOwner, setMessageToOwner] = useState('');
 
   useEffect(() => {
     if (!slug) {
@@ -210,16 +216,20 @@ const PublicShopPage = () => {
         try {
           const messageContent = `New order #${order.id} - $${getTotalPrice()}. Items: ${cart.map(item => `${item.name} x${item.cartQuantity}`).join(', ')}. View details: ${window.location.origin}/order-management`;
           
-          await fetch('http://localhost:3001/api/messages', {
+          await fetch('http://localhost:3002/api/messages', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              senderId: 'guest',
+              senderId: 'system',
               receiverId: shop?.ownerId,
               content: messageContent,
-              type: 'text'
+              type: 'order-notification',
+              metadata: {
+                orderId: order.id,
+                customerEmail: customerEmail
+              }
             }),
           });
         } catch (msgError) {
@@ -299,6 +309,69 @@ const PublicShopPage = () => {
                   /shop/{shop.slug}
                 </CardDescription>
                 <p className="text-foreground/80">{shop.description}</p>
+                <div className="flex items-center gap-2 mt-3">
+                  <span className="text-sm text-muted-foreground">Seller:</span>
+                  <Dialog open={showOwnerProfile} onOpenChange={setShowOwnerProfile}>
+                    <DialogTrigger asChild>
+                      <Button variant="link" className="p-0 h-auto font-medium text-primary hover:underline">
+                        {shop.ownerDisplayName || shop.ownerName}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Seller Profile</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <h3 className="font-semibold">{shop.ownerDisplayName}</h3>
+                          <p className="text-sm text-muted-foreground">@{shop.ownerName}</p>
+                        </div>
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-2">Send a message:</h4>
+                          <Textarea
+                            placeholder="Type your message here..."
+                            value={messageToOwner}
+                            onChange={(e) => setMessageToOwner(e.target.value)}
+                            rows={3}
+                          />
+                          <Button 
+                            className="w-full mt-3" 
+                            onClick={async () => {
+                              if (!messageToOwner.trim()) return;
+                              try {
+                                await fetch('http://localhost:3002/api/messages', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    senderId: 'customer',
+                                    receiverId: shop.ownerId,
+                                    content: messageToOwner,
+                                    type: 'text'
+                                  })
+                                });
+                                toast({
+                                  title: "Message sent",
+                                  description: "Your message has been sent to the seller"
+                                });
+                                setMessageToOwner('');
+                                setShowOwnerProfile(false);
+                              } catch (error) {
+                                toast({
+                                  title: "Error",
+                                  description: "Failed to send message",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-2" />
+                            Send Message
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 {shop.deliveryCities && shop.deliveryCities.length > 0 && (
                   <div className="flex items-center gap-2 mt-2">
                     <MapPin className="w-4 h-4" />

@@ -12,6 +12,7 @@ import ShopManagement from './pages/ShopManagement';
 import ShopEditor from './pages/ShopEditor';
 import PublicShopPage from './pages/PublicShopPage';
 import Messages from './pages/Messages';
+import CustomerOrders from './pages/CustomerOrders';
 import OrderManagement from './pages/OrderManagement';
 import NotFound from './pages/NotFound';
 
@@ -29,29 +30,19 @@ function App() {
             <SidebarLayout><Dashboard /></SidebarLayout>
           </ProtectedRoute>
         } />
-        <Route path="/user-settings" element={
+        <Route path="/my-orders" element={
           <ProtectedRoute>
-            <SidebarLayout><UserSettings /></SidebarLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/shop-management" element={
-          <ProtectedRoute>
-            <SidebarLayout><ShopManagement /></SidebarLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/shop-editor/:shopId" element={
-          <ProtectedRoute>
-            <SidebarLayout><ShopEditor /></SidebarLayout>
-          </ProtectedRoute>
-        } />
-        <Route path="/messages" element={
-          <ProtectedRoute>
-            <SidebarLayout><Messages /></SidebarLayout>
+            <SidebarLayout><CustomerOrders /></SidebarLayout>
           </ProtectedRoute>
         } />
         <Route path="/order-management" element={
           <ProtectedRoute>
             <SidebarLayout><OrderManagement /></SidebarLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/user-settings" element={
+          <ProtectedRoute>
+            <SidebarLayout><UserSettings /></SidebarLayout>
           </ProtectedRoute>
         } />
         <Route path="*" element={<NotFound />} />

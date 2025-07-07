@@ -1,4 +1,4 @@
-import { Home, Settings, User, Bell, Mail, Package, MessageSquare, ShoppingCart } from "lucide-react"
+import { Home, Settings, User, Bell, Mail, Package, MessageSquare, ShoppingCart, Store } from "lucide-react"
 import { NavLink, useLocation } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
 import { useLanguage } from "@/context/LanguageContext"
@@ -17,12 +17,13 @@ import {
 const getMainItems = (t: (key: any) => string) => [
   { title: t('dashboard'), url: "/dashboard", icon: Home, color: "text-blue-500" },
   { title: t('messages'), url: "/messages", icon: MessageSquare, color: "text-green-500" },
-  { title: t('userSettings'), url: "/user-settings", icon: Settings, color: "text-purple-500" },
+  { title: "My Orders", url: "/my-orders", icon: Package, color: "text-purple-500" },
+  { title: t('userSettings'), url: "/user-settings", icon: Settings, color: "text-gray-500" },
 ];
 
 const getManagementItems = (t: (key: any) => string) => [
-  { title: t('shopManagement'), url: "/shop-management", icon: ShoppingCart, color: "text-orange-500" },
-  { title: t('orderManagement'), url: "/order-management", icon: Package, color: "text-red-500" },
+  { title: t('shopManagement'), url: "/shop-management", icon: Store, color: "text-orange-500" },
+  { title: t('orderManagement'), url: "/order-management", icon: ShoppingCart, color: "text-red-500" },
 ];
 
 export function AppSidebar() {

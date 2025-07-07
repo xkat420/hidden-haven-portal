@@ -112,7 +112,7 @@ const Messages = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/messages', {
+      const response = await fetch('http://localhost:3002/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ const Messages = () => {
     const fileMessage = `[File shared: ${file.name}]`;
     
     try {
-      const response = await fetch('http://localhost:3001/api/messages', {
+      const response = await fetch('http://localhost:3002/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

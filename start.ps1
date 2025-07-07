@@ -16,10 +16,14 @@ if (-not (Test-Path "node_modules")) {
     npm install
 }
 
-Write-Host "Starting backend server..." -ForegroundColor Green
+Write-Host "Starting main server..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; npm start"
 
-Write-Host "Starting email listener service..." -ForegroundColor Green
+Write-Host "Starting message server..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; node messageServer.js"
+
+Write-Host "Starting notification server..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; node notificationServer.js"
 Pop-Location
 
 # Frontend setup  
@@ -36,7 +40,9 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$fr
 Pop-Location
 
 Write-Host "All services launched successfully!" -ForegroundColor Magenta
-Write-Host "   Backend: http://localhost:3001" -ForegroundColor Green
+Write-Host "   Main Server: http://localhost:3001" -ForegroundColor Green
+Write-Host "   Message Server: http://localhost:3002" -ForegroundColor Green
+Write-Host "   Notification Server: http://localhost:3003" -ForegroundColor Green
 Write-Host "   Frontend: http://localhost:5173" -ForegroundColor Green
 Write-Host "Features implemented:" -ForegroundColor Cyan
 Write-Host "   - User settings and profile management" -ForegroundColor White

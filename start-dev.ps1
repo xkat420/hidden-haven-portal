@@ -19,8 +19,14 @@ if (-not (Test-Path (Join-Path $backendPath "node_modules"))) {
     npm install
 }
 
-Write-Host "Starting backend server (Node.js)..." -ForegroundColor Green
+Write-Host "Starting main server (Node.js)..." -ForegroundColor Green
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; npm start"
+
+Write-Host "Starting message server..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; node messageServer.js"
+
+Write-Host "Starting notification server..." -ForegroundColor Green
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$backendPath'; node notificationServer.js"
 Pop-Location
 
 # --- Frontend App Setup ---
