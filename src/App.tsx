@@ -45,6 +45,21 @@ function App() {
             <SidebarLayout><UserSettings /></SidebarLayout>
           </ProtectedRoute>
         } />
+        <Route path="/messages" element={
+          <ProtectedRoute>
+            <SidebarLayout><Messages /></SidebarLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/shop-management" element={
+          <ProtectedRoute>
+            <SidebarLayout><ShopManagement /></SidebarLayout>
+          </ProtectedRoute>
+        } />
+        <Route path="/shop-editor/:shopId" element={
+          <ProtectedRoute>
+            <SidebarLayout><ShopEditor /></SidebarLayout>
+          </ProtectedRoute>
+        } />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
